@@ -21,12 +21,22 @@ android {
         }
     }
 
+    // TEST-ONLY key, committed on purpose so every CI build has the same signature
+    // and installs as an update. The repo is public: replace with a private
+    // upload key (GitHub secret) before publishing to the Play Store.
+    signingConfigs {
+        test {
+            storeFile file('mechsiege-test.jks')
+            storePassword 'mechsiege-test'
+            keyAlias 'mechsiege'
+            keyPassword 'mechsiege-test'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            // Signed with the debug key so the APK installs directly for testing.
-            // Swap in a real keystore before uploading to the Play Store.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.test
         }
     }
 
