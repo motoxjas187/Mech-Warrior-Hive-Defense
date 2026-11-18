@@ -571,7 +571,7 @@ function fireW(s){
     snd(160,.25,'sawtooth',.025,2);return true;}
   if(s.kind==='mortar'){const t0=getTarget();if(!t0)return false;
     for(let k=0;k<s.pellets;k++){const t=k===0?t0:(nearestN(t0.x+rnd(-80,80),t0.y+rnd(-80,80),1)[0]||t0);const [c,m]=rollHit(s);
-      R.pr.push({k:'o',x,y,sx:x,sy:y,tx:t.x+t.vx*.8,ty:t.y+t.vy*.8,f:0,dur:.9,dmg:s.dmg*m,crit:c,life:2,s});}
+      R.pr.push({k:'o',x,y,sx:x,sy:y,tx:t.x+(t.vx||0)*.8,ty:t.y+(t.vy||0)*.8,f:0,dur:.9,dmg:s.dmg*m,crit:c,life:2,s});}
     snd(120,.2,'sine',.04,1.8);return true;}
   if(s.kind==='beam'){let ts=[];const f=getTarget();if(f)ts.push(f);ts=ts.concat(nearestN(MX,MY-30,s.pellets+1,0,new Set(ts))).slice(0,s.pellets);if(!ts.length){return false;}
     R.beamDraw[i]={ts,life:.12,col:s.col,w:1+s.dmgM*.3};
@@ -1194,14 +1194,22 @@ window.addEventListener('resize',resize);
 
 /* loop */
 let last=performance.now(),uiT=0,panelT=0,saveT=0;
+const fin=o=>isFinite(o.x)&&isFinite(o.y);
+function sanitize(){R.parts=R.parts.filter(p=>fin(p)&&isFinite(p.size));R.scorch=R.scorch.filter(s=>fin(s)&&isFinite(s.r));R.pr=R.pr.filter(fin);R.ep=R.ep.filter(fin);R.orbs=R.orbs.filter(fin);R.nums=R.nums.filter(fin);R.strikes=R.strikes.filter(fin);
+  for(const e of R.en)if(!fin(e)){e.x=VW*.8;e.y=-20;e.vx=e.vy=0;}for(const d of R.drones)if(!fin(d)){d.x=MX;d.y=MY-30;}R.beams=R.beams.filter(b=>isFinite(b.x1+b.y1+b.x2+b.y2));R.arcs=[];if(!isFinite(R.aim))R.aim=-.5;}
+let errN=0;
 function loop(now){
+  requestAnimationFrame(loop);
+  try{step(now);errN=0;}catch(e){errN++;try{console.error(e);sanitize();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}catch(_){}
+    if(errN===30)toast('Recovered from a glitch','#ff4d5e');}
+}
+function step(now){
   let dt=(now-last)/1000;last=now;if(dt>.05)dt=.05;if(dt<0)dt=0;
   if(!R.paused)update(dt);else{R.time+=dt*.2;}draw();
   uiT+=dt;panelT+=dt;saveT+=dt;
   if(uiT>.15){uiT=0;hud();updatePanel();}
   if(panelT>1){panelT=0;if(!R.pdown&&!$('#modal').classList.contains('on'))renderPanel();if(modalKind==='missions'&&!R.pdown)showMissions();}
   if(saveT>5){saveT=0;save();}
-  requestAnimationFrame(loop);
 }
 load();resize();recalc();fillMissions();startWave();renderPanel();hud();
 if(S.hp[0]&&!S.hp[0].w)newDraft('unlock',0,.3);
