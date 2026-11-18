@@ -1,6 +1,6 @@
 # Mech Siege: Hive War
 
-An idle mech defense game for Android: a 1,000-weapon draft pool (10 bases × 20 prefixes × 5 elements, choose 1 of 2 on every new hardpoint or Weapon Cache), six hardpoints, squad-based alien waves, Hives, Queen bosses, an upgrade tree, fusable modules and Core Reboot prestige.
+An idle mech defense game for Android: a 12,000-weapon draft pool (10 bases × 20 prefixes × 5 elements × 12 suffixes, choose 1 of 2 on every new hardpoint or Weapon Cache), six hardpoints, squad-based alien waves, Hives, Queen bosses, an upgrade tree, fusable modules and Core Reboot prestige.
 
 ## Get the APK
 Every push to `main` builds a new APK automatically.

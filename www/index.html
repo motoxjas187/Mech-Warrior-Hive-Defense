@@ -46,6 +46,8 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 #boost b{color:var(--orange)}
 #boost small{color:var(--dim);display:block}
 #boost.cd{border-color:var(--line);opacity:.75}
+#spd{position:absolute;left:8px;bottom:60px;z-index:4;background:rgba(10,18,26,.88);border:1px solid var(--cyan);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:14px;padding:6px 11px;border-radius:3px}
+#spd.x2{background:var(--cyan);color:#06222b;box-shadow:0 0 12px var(--cyan)}
 #abil{position:absolute;right:8px;bottom:8px;display:flex;gap:7px;z-index:2}
 .ab{width:50px;height:50px;border-radius:50%;position:relative;background:conic-gradient(rgba(0,0,0,.65) calc(var(--p,0)*1%),transparent 0),radial-gradient(#1b2c3c,#0d1720);border:2px solid var(--cyan);display:grid;place-items:center;font-size:9px;font-weight:700;letter-spacing:.5px}
 .ab svg{width:22px;height:22px;margin-top:-6px}
@@ -154,6 +156,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
     <canvas id="cv"></canvas>
     <div id="toasts"></div>
     <button id="boost" data-act="boost"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffa62b"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span><b>Boost $x2</b><small id="boostTxt">+5 min</small></span></button>
+    <button id="spd" data-act="speed">▶ 1×</button>
     <div id="abil">
       <button class="ab" data-act="ab" data-k="overdrive"><svg viewBox="0 0 24 24" fill="#ffa62b"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span>OVRDRV</span></button>
       <button class="ab" data-act="ab" data-k="orbital"><svg viewBox="0 0 24 24" fill="none" stroke="#3fe0ff" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M12 1v6M12 17v6M1 12h6M17 12h6"/></svg><span>ORBITAL</span></button>
@@ -188,7 +191,7 @@ function fmt(n){
 }
 
 /* ================= DATA ================= */
-/* ---- 1000-weapon pool: 10 bases x 20 prefixes x 5 elements (HORDEFALL-style) ---- */
+/* ---- 12,000-weapon pool: 10 bases x 20 prefixes x 5 elements x 12 suffixes (HORDEFALL-style) ---- */
 const HPT=[ // hardpoint tiers: unlock cost, level cost, growth, dps per level
   {unlock:0,cost:10,r:1.12,dps:5},{unlock:400,cost:250,r:1.125,dps:55},{unlock:12e3,cost:7e3,r:1.13,dps:800},
   {unlock:4e5,cost:2.2e5,r:1.135,dps:1.3e4},{unlock:1.2e7,cost:7e6,r:1.14,dps:2.4e5},{unlock:4e8,cost:2.5e8,r:1.145,dps:5e6}];
@@ -234,9 +237,24 @@ const ELEM=[
   {id:'void',w:'Void',col:'#c35bff',desc:'Void: executes foes under 18% HP (6% bosses)'},
 ];
 const WRAR=[['Common','#b8bfd0',1],['Uncommon','#5be37d',1.3],['Rare','#4aa8ff',1.7],['Epic','#c06bff',2.3],['Legendary','#ffa53a',3.2],['Mythic','#ff3d5a',4.8]];
-const wb=id=>BASES[Math.floor(id/100)],wp=id=>PREFIX[Math.floor(id%100/5)],we=id=>ELEM[id%5];
-const wName=id=>`${wp(id)[0]} ${we(id).w} ${wb(id).name}`;
-const wNo=id=>'#'+String(id+1).padStart(4,'0');
+const SUFFIX=[
+  ['','Standard issue',s=>{}],
+  ['of Fury','+20% fire rate',s=>{s.rate*=1.2}],
+  ['of Ruin','+60% damage to bosses & hives',s=>{s.bossM*=1.6}],
+  ['of the Hive','+1 pierce, +1 chain jump',s=>{s.pierce+=1;s.chains+=1}],
+  ['of Echoes','20% chance to fire twice',s=>{s.echo+=.2}],
+  ['of Embers','+60% element strength',s=>{s.elM*=1.6}],
+  ['of the Titan','+45% damage, -15% fire rate',s=>{s.dmgM*=1.45;s.rate*=.85}],
+  ['of Greed','+15% scrap income while installed',s=>{s.greed=1}],
+  ['of Precision','+8% crit chance, +25% crit damage',s=>{s.crit+=.08;s.critMult+=.25}],
+  ['of Havoc','+35% blast radius or +1 projectile',s=>{if(s.aoe)s.aoe*=1.35;else s.pellets+=1}],
+  ['of Thunder','12% chance hits call lightning',s=>{s.thunder=.12}],
+  ['of Overload','+15% damage & velocity, x2 in Overdrive',s=>{s.dmgM*=1.15;s.spd*=1.15;s.odM=2}],
+];
+const POOL=BASES.length*PREFIX.length*ELEM.length*SUFFIX.length; // 12,000
+const wb=id=>BASES[Math.floor(id%1000/100)],wp=id=>PREFIX[Math.floor(id%100/5)],we=id=>ELEM[id%5],wsx=id=>SUFFIX[Math.floor(id/1000)];
+const wName=id=>`${wp(id)[0]} ${we(id).w} ${wb(id).name}${wsx(id)[0]?' '+wsx(id)[0]:''}`;
+const wNo=id=>'#'+String(id+1).padStart(5,'0');
 const ICON={
   cannon:'<svg viewBox="0 0 40 40"><rect x="4" y="13" width="16" height="14" fill="#5d6b78"/><rect x="18" y="14" width="18" height="3" fill="#9fb0bf"/><rect x="18" y="18.5" width="18" height="3" fill="#cfdbe6"/><rect x="18" y="23" width="18" height="3" fill="#9fb0bf"/><rect x="6" y="15" width="6" height="10" fill="#3fe0ff"/></svg>',
   laser:'<svg viewBox="0 0 40 40"><rect x="4" y="14" width="18" height="12" fill="#5d6b78"/><rect x="20" y="17" width="8" height="6" fill="#9fb0bf"/><rect x="28" y="18.5" width="9" height="3" fill="#ff4d6d"/><circle cx="12" cy="20" r="3" fill="#ff4d6d"/></svg>',
@@ -283,7 +301,7 @@ const SHOP=[
   {id:'orbital',name:'Orbital Strike',desc:'Ability: beam strike on the densest swarm. 40s cooldown.',cost:()=>40,done:()=>S.abilities.orbital},
   {id:'repair',name:'Field Repair',desc:'Ability: restore 60% hull. 90s cooldown.',cost:()=>25,done:()=>S.abilities.repair},
   {id:'slot',name:'Module Slot',desc:'+1 equipped module slot (max 6).',cost:()=>60+(S.slots-4)*60,done:()=>S.slots>=6},
-  {id:'cache',name:'Weapon Cache',desc:'Choose 1 of 2 random weapons from the 1,000 pool.',cost:()=>30},
+  {id:'cache',name:'Weapon Cache',desc:'Choose 1 of 2 random weapons from the 12,000 pool.',cost:()=>30},
   {id:'crate',name:'Module Crate',desc:'One random module with boosted rarity.',cost:()=>20},
   {id:'warp',name:'Time Warp',desc:'Instantly collect 1 hour of scrap income.',cost:()=>30},
 ];
@@ -332,7 +350,8 @@ function recalc(){
   D.regen=.004*lvl('repair');
   D.taken=Math.max(.4,1-.04*lvl('reactive'));
   let wl=0,tl=0;for(const h of S.hp)if(h)wl+=h.lvl;for(const k in S.tree)tl+=S.tree[k];
-  D.upInc=(1+.01*wl)*(1+.02*tl);
+  let gr=0;for(const h of S.hp)if(h&&h.w&&Math.floor(h.w.id/1000)===7)gr++;
+  D.upInc=(1+.01*wl)*(1+.02*tl)*(1+.15*gr);
   D.scrap=(1+.08*lvl('drones')+.12*lvl('magnet'))*(1+modSum('scavenger')/100)*core*D.upInc;
   D.drones=lvl('drones');
   D.boss=1+.5*lvl('hivebreaker');
@@ -343,6 +362,7 @@ function recalc(){
   while(R.drones.length<Math.min(8,D.drones))R.drones.push({x:MX,y:MY-30,a:Math.random()*TAU,o:null});
   if(R.drones.length>D.drones)R.drones.length=Math.min(8,D.drones);
 }
+function bossThreat(){let t=0,n=0;for(const h of S.hp)if(h&&h.w){t+=WRAR[h.w.rar][2];n++;}const avg=n?t/n:1;return Math.max(1,Math.pow(avg,1.35)*(1+.1*S.prestiges));}
 const hpScale=w=>10*Math.pow(1.2,w-1)*(1+.04*S.prestiges);
 const rewScale=w=>2.5*Math.pow(1.14,w-1);
 const dmgScale=w=>Math.pow(1.09,w-1);
@@ -351,8 +371,8 @@ const boostOn=()=>Date.now()<S.boostEnd;
 function wStats(i){
   const h=S.hp[i];if(!h||!h.w)return null;const id=h.w.id,b=wb(id),l=h.lvl;
   const s={kind:b.kind,rate:b.rate,pellets:b.pellets||1,spread:b.spread||0,spd:b.spd||1000,pierce:b.pierce||0,aoe:b.aoe||0,range:b.range||0,chains:b.chains||0,
-    homing:!!b.homing,big:!!b.big,dmgM:b.dmg,crit:0,critMult:0,leech:0,perk:null,el:id%5,col:we(id).col,i};
-  wp(id)[2](s);
+    homing:!!b.homing,big:!!b.big,dmgM:b.dmg,crit:0,critMult:0,leech:0,perk:null,bossM:1,echo:0,elM:1,greed:0,thunder:0,odM:1,el:id%5,col:we(id).col,i};
+  wp(id)[2](s);wsx(id)[2](s);
   s.dmg=HPT[i].dps*l*Math.pow(2,Math.floor(l/25))*WRAR[h.w.rar][2]*s.dmgM/(b.rate*(b.pellets||1));
   s.dps=s.dmg*s.rate*s.pellets;
   return s;
@@ -455,7 +475,7 @@ function spawnSquad(n){
   }
 }
 function spawnHive(){
-  const w=S.wave;const hp=hpScale(w)*45;
+  const w=S.wave;const hp=hpScale(w)*45*bossThreat();
   R.hives.push({isHive:true,x:VW*rnd(.62,.9),y:VH*rnd(.12,.36),hp,max:hp,r:28,lvl:1,spawnT:3,alive:0,flash:0,acc:0,accT:0,t:0,dead:false});
   toast('⚠ A Hive has emerged — tap it to focus fire','#ff4d9a');
 }
@@ -500,7 +520,7 @@ function killEnemy(e){
   R.scorch.push({x:e.x,y:e.y,r:e.r*(big?1.6:1.1),a:.5});if(R.scorch.length>50)R.scorch.shift();
   for(let i=0;i<(big?5:1);i++)R.orbs.push({x:e.x,y:e.y,vx:rnd(-60,60),vy:rnd(-80,10),t:0});
   if(e.type==='brute'){S.stats.brutes++;if(Math.random()<.05)dropModule(0,e.x,e.y);if(Math.random()<.02)gainCache('Brute');}
-  else if(e.boss){S.stats.queens++;const c=6+D.prospect+Math.floor(S.wave/10);S.crystals+=c;gainCache('Queen');dropModule(1.5,e.x,e.y);toast('Queen destroyed  +'+c+' ◆','#ff4d9a');R.shake=14;noise(.18,.7);}
+  else if(e.boss){S.stats.queens++;const T=e.threat||1;const c=Math.round((6+D.prospect+Math.floor(S.wave/10))*T);if(T>=2.5)gainCache('Queen bonus');earn(rewScale(S.wave)*40*T);S.crystals+=c;gainCache('Queen');dropModule(1.5,e.x,e.y);toast('Queen destroyed  +'+c+' ◆','#ff4d9a');R.shake=14;noise(.18,.7);}
   else if(Math.random()<.002)dropModule(0,e.x,e.y);
   if(big)R.shake=Math.max(R.shake,6);
   if(Math.random()<.25)noise(.035,.18);
@@ -544,6 +564,7 @@ function rollHit(s){const c=Math.random()<D.crit+s.crit;return[c,c?D.critDmg+s.c
 // central on-hit: damage + element + perk + leech
 function strike(t,s,dmg,crit,o){
   if(!t||t.dead)return;o=o||{};
+  if(t.boss||t.isHive)dmg*=s.bossM;if(R.od>0)dmg*=s.odM;
   hit(t,dmg,crit,o);
   if(o.sec)return;
   applyEl(t,s,dmg,o.cont);
@@ -551,15 +572,16 @@ function strike(t,s,dmg,crit,o){
   if(s.perk==='storm'&&Math.random()<pc){const ns=nearestN(t.x,t.y,3,120,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(e=>[e.x,e.y])],life:.12,col:s.col});for(const e of ns)hit(e,dmg*.5,false,{sec:true,cont:o.cont});}}
   if(s.perk==='nova'&&Math.random()<.18*pc){boom(t.x,t.y,.6,s.col);for(const e of [...R.en,...R.hives])if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<60+e.r)hit(e,dmg*.6,false,{sec:true});}
   if(s.perk==='split'&&!o.cont&&!o.shard){for(let k=0;k<4;k++){const a=k*TAU/4+Math.random();R.pr.push({k:'b',x:t.x,y:t.y,vx:Math.cos(a)*600,vy:Math.sin(a)*600,dmg:dmg*.4,crit:false,pierce:0,hits:new Set([t]),life:.25,s,shard:true,w:1});}}
+  if(s.thunder&&!o.cont&&Math.random()<s.thunder){R.beams.push({x1:t.x,y1:-20,x2:t.x,y2:t.y,life:.2,max:.2,col:'#e6f6ff',w:4});for(const e of [...R.en,...R.hives])if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<55+e.r)hit(e,dmg*1.5,false,{sec:true});}
   if(s.leech&&R.leechT<=0){S.hull=Math.min(D.hull,S.hull+D.hull*.004);R.leechT=.08;}
 }
 function applyEl(t,s,dmg,cont){
-  if(t.dead)return;const e=ELEM[s.el].id;
-  if(e==='fire'){t.burn=3;t.burnD=Math.max(t.burnD||0,dmg*.35*(cont?.3:1));}
-  else if(e==='ice'){t.slow=2;}
-  else if(e==='shock'){if(Math.random()<(cont?.08:.3)){const ns=nearestN(t.x,t.y,2,110,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(x=>[x.x,x.y])],life:.1,col:'#b48cff'});for(const x of ns)hit(x,dmg*.5,false,{sec:true});}}}
-  else if(e==='poison'){t.pois=(t.pois||0)+dmg*.25*(cont?.3:1);}
-  else if(e==='void'){if(!t.dead&&t.hp>0&&t.hp/t.max<((t.boss||t.isHive)?.06:.18)){const v=t.hp;t.hp=0;addNum(t.x,t.y-t.r-8,v,true);R.parts.push({x:t.x,y:t.y,vx:0,vy:0,life:.5,max:.5,col:'#c35bff',size:t.r*2,type:'ring'});t.isHive?killHive(t):killEnemy(t);}}
+  if(t.dead)return;const e=ELEM[s.el].id;const m=s.elM;
+  if(e==='fire'){t.burn=3;t.burnD=Math.max(t.burnD||0,dmg*.35*m*(cont?.3:1));}
+  else if(e==='ice'){t.slow=2*m;}
+  else if(e==='shock'){if(Math.random()<(cont?.08:.3)*m){const ns=nearestN(t.x,t.y,2,110,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(x=>[x.x,x.y])],life:.1,col:'#b48cff'});for(const x of ns)hit(x,dmg*.5,false,{sec:true});}}}
+  else if(e==='poison'){t.pois=(t.pois||0)+dmg*.25*m*(cont?.3:1);}
+  else if(e==='void'){if(!t.dead&&t.hp>0&&t.hp/t.max<((t.boss||t.isHive)?.06:.18)*Math.min(1.8,m)){const v=t.hp;t.hp=0;addNum(t.x,t.y-t.r-8,v,true);R.parts.push({x:t.x,y:t.y,vx:0,vy:0,life:.5,max:.5,col:'#c35bff',size:t.r*2,type:'ring'});t.isHive?killHive(t):killEnemy(t);}}
 }
 function fireW(s){
   const i=s.i;const [x,y]=muzzle(i);
@@ -650,7 +672,9 @@ function update(dt){
       wv.squadT=Math.max(.9,2.3-S.wave*.02)+rnd(0,.6);
     }
     if(wv.boss&&!wv.bossSpawned&&wv.spawned>=normalTotal&&R.en.filter(e=>e.counted).length<6){
-      wv.bossSpawned=true;const q=mkEnemy('queen',VW*.85,-40,null,true);R.en.push(q);wv.spawned++;banner('HIVE QUEEN','#ff4d9a');noise(.15,.8);
+      wv.bossSpawned=true;const T=bossThreat();const nq=T>=3.5?2:1;
+      for(let k=0;k<nq;k++){const q=mkEnemy('queen',VW*(.85-k*.25),-40-k*30,null,true);q.threat=T;q.hp*=T;q.max=q.hp;q.armor=T>=1.5?.3:0;q.dmgM=Math.sqrt(T);q.volleyT=4;R.en.push(q);if(k)wv.total++;}
+      wv.spawned++;banner(nq>1?'TWIN QUEENS  ×'+T.toFixed(1):'HIVE QUEEN  ×'+T.toFixed(1),'#ff4d9a');noise(.15,.8);
     }
     if(wv.killed>=wv.total){wv.done=true;R.clearT=1.6;banner('WAVE '+S.wave+' CLEARED','#5dff9b');snd(520,.12,'triangle',.05,1.5);}
   }else{R.clearT-=dt;if(R.clearT<=0)onWaveClear();}
@@ -673,9 +697,12 @@ function update(dt){
     let tx=cx,ty=cy,move=true;
     if(!e.def.fly&&e.sq&&e.sq.state==='march'){tx=e.sq.ax+e.ox;ty=e.sq.ay+e.oy;if(Math.hypot(tx-e.x,ty-e.y)<28||dm<220)e.sq.state='charge';}
     if(e.type==='spitter'&&dm<e.def.range){move=false;e.atk-=dt;if(e.atk<=0){e.atk=2.4;const a=Math.atan2(dy0,dx0);R.ep.push({x:e.x+Math.cos(a)*10,y:e.y+Math.sin(a)*10,vx:Math.cos(a)*190,vy:Math.sin(a)*190,dmg:e.def.dmg*dmgScale(S.wave)});snd(300,.1,'sine',.02,.5);}}
-    if(e.boss){e.spawnT-=dt;if(e.spawnT<=0){e.spawnT=3.5;for(let i=0;i<2;i++)R.en.push(mkEnemy('crawler',e.x+rnd(-20,20),e.y+rnd(-10,20),null,false));}}
+    if(e.boss){const T=e.threat||1;
+      if(!e.enraged&&e.hp<e.max*.5&&T>=1.5){e.enraged=true;e.spd*=1.6;toast('Queen ENRAGED','#ff4d5e');R.shake=8;}
+      if(T>=2.5){e.volleyT-=dt;if(e.volleyT<=0){e.volleyT=e.enraged?2.5:4;const a0=Math.atan2(dy0,dx0);for(let k=-2;k<=2;k++){const a=a0+k*.18;R.ep.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,dmg:EN.queen.dmg*.35*dmgScale(S.wave)*(e.dmgM||1)});}snd(260,.2,'sine',.03,.5);}}
+      e.spawnT-=dt;if(e.spawnT<=0){e.spawnT=e.enraged?2:3.5;for(let i=0;i<2;i++)R.en.push(mkEnemy('crawler',e.x+rnd(-20,20),e.y+rnd(-10,20),null,false));}}
     const reach=MECH_R+e.r;
-    if(dm<reach+2){move=false;e.atk-=dt;if(e.atk<=0){e.atk=1.1;hurt(e.def.dmg*dmgScale(S.wave));sparks(cx-dx0/dm*MECH_R,cy-dy0/dm*MECH_R,3,'#ffd27a');}}
+    if(dm<reach+2){move=false;e.atk-=dt;if(e.atk<=0){e.atk=1.1;hurt(e.def.dmg*dmgScale(S.wave)*(e.dmgM||1));sparks(cx-dx0/dm*MECH_R,cy-dy0/dm*MECH_R,3,'#ffd27a');}}
     if(move){let dx=tx-e.x,dy=ty-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
       if(e.type==='stalker'){const w=Math.sin(e.t*3.2)*.65;const px=-dy,py=dx;dx+=px*w;dy+=py*w;}
       if(e.def.fly){const w=Math.sin(e.t*2)*.35;dx+=-dy*w;dy+=dx*w;}
@@ -697,7 +724,7 @@ function update(dt){
   if(mainT){const [mx,my]=[MX,MY-30];const want=Math.atan2(mainT.y-my,mainT.x-mx);let da=want-R.aim;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;R.aim+=da*Math.min(1,dt*10);R.spin+=dt*30*rateM;}
   for(let i=0;i<6;i++){const s=R.ws[i];if(!s)continue;
     R.wt[i]=(R.wt[i]||0)-dt*rateM;let g=0;
-    while(R.wt[i]<=0&&g<4){if(!fireW(s)){R.wt[i]=0;break;}R.wt[i]+=1/s.rate;g++;}}
+    while(R.wt[i]<=0&&g<4){if(!fireW(s)){R.wt[i]=0;break;}if(s.echo&&Math.random()<s.echo)fireW(s);R.wt[i]+=1/s.rate;g++;}}
   for(let i=0;i<6;i++){if(R.beamDraw[i]){R.beamDraw[i].life-=dt;if(R.beamDraw[i].life<=0)R.beamDraw[i]=null;}if(R.flameDraw[i]>0)R.flameDraw[i]-=dt;}
   // projectiles
   const tgts=()=>R.en.concat(R.hives);
@@ -935,7 +962,7 @@ function draw(){
   ctx.restore();
   // boss bar
   const q=R.en.find(e=>e.boss);
-  if(q){const w=VW*.6,x=(VW-w)/2,y=12;ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(x-2,y-2,w+4,12);ctx.fillStyle='#ff4d9a';ctx.fillRect(x,y,w*Math.max(0,q.hp/q.max),8);ctx.font='bold 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText('HIVE QUEEN  '+fmt(Math.max(0,q.hp)),VW/2,y+26);}
+  if(q){const w=VW*.6,x=(VW-w)/2,y=12;ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(x-2,y-2,w+4,12);ctx.fillStyle='#ff4d9a';ctx.fillRect(x,y,w*Math.max(0,q.hp/q.max),8);ctx.font='bold 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText('HIVE QUEEN ×'+(q.threat||1).toFixed(1)+(q.enraged?'  ENRAGED':'')+'  '+fmt(Math.max(0,q.hp)),VW/2,y+26);}
   // banner
   if(R.banner){const b=R.banner,a=Math.min(1,b.t/.4,(b.max-b.t)/.2+.01);ctx.globalAlpha=a;ctx.font='bold 26px "Chakra Petch",sans-serif';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(b.txt,VW/2,VH*.42);ctx.fillStyle=b.col;ctx.fillText(b.txt,VW/2,VH*.42);ctx.globalAlpha=1;}
   // hurt vignette
@@ -952,6 +979,7 @@ function hud(){
   $('#crys').textContent=fmt(S.crystals);
   $('#coresTxt').textContent='Cores '+S.cores+' · Hull '+Math.max(0,Math.round(S.hull/D.hull*100))+'%';
   $('#waveTxt').textContent='Wave '+S.wave;
+  {const sp=$('#spd');sp.textContent=S.speed===2?'▶▶ 2×':'▶ 1×';sp.classList.toggle('x2',S.speed===2);}
   const fb=$('#farmBtn');fb.textContent=S.farm?'FARM ⟳':'AUTO ▶';fb.classList.toggle('farm',S.farm);
   $('#waveCnt').textContent=R.wv.killed+'/'+R.wv.total;
   $('#wp').style.width=(R.wv.killed/R.wv.total*100)+'%';
@@ -978,21 +1006,21 @@ function updatePanel(){
 }
 function hpCard(i){
   const h=S.hp[i],w=h.w;
-  if(!w)return `<button class="unlock" data-act="draft" data-k="${i}">CHOOSE WEAPON FOR HARDPOINT ${i+1}<small>Pick 1 of 2 from the 1,000-weapon pool</small></button>`;
+  if(!w)return `<button class="unlock" data-act="draft" data-k="${i}">CHOOSE WEAPON FOR HARDPOINT ${i+1}<small>Pick 1 of 2 from the 12,000-weapon pool</small></button>`;
   const {n,cost}=buyInfo(i);const ms=Math.pow(2,Math.floor(h.lvl/25));const rc=WRAR[w.rar][1];
   return `<div class="card wcard"><button class="wico" data-act="winfo" data-k="${i}" style="border-color:${rc}">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></button><div class="wmid" data-act="winfo" data-k="${i}"><div class="wname" style="color:${rc}">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · HP${i+1}</div><div class="wbar"><i style="width:${(h.lvl%25)/25*100}%"></i></div><div class="wsub"><span>Lv. ${h.lvl}</span><span>DPS ${fmt(wDps(i)*D.rate)}/s</span><span class="ms">x${ms}</span></div></div>
   <button class="buy" data-act="buyw" data-k="${i}" data-cost="${cost}"><small>+${n} LV · +${n}% $</small><b>${fmt(cost)} <em>$</em></b></button></div>`;
 }
 function tabMech(){
   let h=`<div class="row between" style="margin-bottom:9px"><div class="h" style="margin:0">Total DPS <b class="mono">${fmt(totalDps())}</b></div><div class="seg">${[1,10,25,'MAX'].map(m=>`<button data-act="buymode" data-v="${m}" class="${S.buyMode==m?'on':''}">${m==='MAX'?'MAX':'x'+m}</button>`).join('')}</div></div>`;
-  h+=`<div class="row between" style="margin-bottom:9px;gap:8px"><button class="btn" data-act="codex" style="flex:1">📖 Codex ${S.found.length}/1000</button>${S.caches?`<button class="btn o" data-act="opencache" style="flex:1">▣ Open Weapon Cache ×${S.caches}</button>`:`<span class="note" style="flex:1">Queens & Hives drop Weapon Caches</span>`}</div>`;
+  h+=`<div class="row between" style="margin-bottom:9px;gap:8px"><button class="btn" data-act="codex" style="flex:1">📖 Codex ${S.found.length}/${fmt(POOL)}</button>${S.caches?`<button class="btn o" data-act="opencache" style="flex:1">▣ Open Weapon Cache ×${S.caches}</button>`:`<span class="note" style="flex:1">Queens & Hives drop Weapon Caches</span>`}</div>`;
   let shownLock=false;
   for(let i=0;i<6;i++){
     if(S.hp[i])h+=hpCard(i);
     else if(!shownLock){shownLock=true;h+=`<button class="unlock" data-act="unlock" data-k="${i}" data-cost="${HPT[i].unlock}">Unlock Hardpoint ${i+1}  ${fmt(HPT[i].unlock)} $<small>Then choose 1 of 2 weapons · max rarity ${WRAR[rarCap()][0]}</small></button>`;}
     else h+=`<div class="card locked">◼ HARDPOINT ${i+1} LOCKED ◼</div>`;
   }
-  h+=`<div class="note" style="margin-top:6px"><b style="color:#ffa62b">Income bonus ×${D.upInc.toFixed(2)}</b>: every weapon level adds +1% scrap and every tree upgrade +2%. Weapon rarity now reaches <b style="color:${WRAR[rarCap()][1]}">${WRAR[rarCap()][0]}</b>; each Reboot unlocks a higher rarity and better odds. Levels belong to the hardpoint: swap in a new weapon and it keeps the level. Every 25 levels doubles damage. Tap a weapon for its full stats. Tap an enemy or Hive to focus fire.</div>`;
+  h+=`<div class="note" style="margin-top:6px"><b style="color:#ffa62b">Income bonus ×${D.upInc.toFixed(2)}</b>: every weapon level adds +1% scrap and every tree upgrade +2%. Boss threat <b style="color:#ff4d9a">×${bossThreat().toFixed(1)}</b> (stronger weapons = stronger Queens & Hives, bigger rewards). Weapon rarity now reaches <b style="color:${WRAR[rarCap()][1]}">${WRAR[rarCap()][0]}</b>; each Reboot unlocks a higher rarity and better odds. Levels belong to the hardpoint: swap in a new weapon and it keeps the level. Every 25 levels doubles damage. Tap a weapon for its full stats. Tap an enemy or Hive to focus fire.</div>`;
   return h;
 }
 function tabTree(){
@@ -1104,6 +1132,7 @@ document.addEventListener('click',ev=>{
     case 'reset1':openModal(`<h2>Reset everything?</h2><p class="note">This deletes all progress, cores, modules and crystals.</p><div class="row" style="gap:10px;margin-top:12px"><button class="btn o" data-act="reset2">Delete save</button><button class="btn" data-act="close">Cancel</button></div>`);break;
     case 'reset2':noSave=true;try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload();break;
     case 'restart':save();location.reload();break;
+    case 'speed':S.speed=S.speed===2?1:2;toast(S.speed===2?'Game speed 2×':'Game speed 1×','#3fe0ff');break;
     case 'close':closeModal();break;
     case 'farm':S.farm=!S.farm;toast(S.farm?'Farm mode: repeating Wave '+S.wave:'Auto-advance ON');break;
     case 'boost':{const now=Date.now();if(now<S.boostCd){toast('Boost recharging');break;}S.boostEnd=Math.min(Math.max(now,S.boostEnd)+5*60e3,now+30*60e3);S.boostCd=now+3*60e3;toast('Scrap x2 boost +5 min','#ffa62b');snd(700,.25,'triangle',.05,2);break;}
@@ -1117,10 +1146,10 @@ function rollWRar(bonus){
   let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}return 0;
 }
 function rollWeapon(bonus,avoidBase,starter){
-  let id=0;for(let t=0;t<40;t++){id=Math.floor(Math.random()*1000);const bb=Math.floor(id/100);if(avoidBase!=null&&bb===avoidBase)continue;if(starter&&(bb===3||bb===8||bb===2))continue;if(!S.found.includes(id)||t>5)break;}
+  let id=0;for(let t=0;t<40;t++){id=Math.floor(Math.random()*POOL);const bb=Math.floor(id%1000/100);if(avoidBase!=null&&bb===avoidBase)continue;if(starter&&(bb===3||bb===8||bb===2))continue;if(!S.found.includes(id)||t>5)break;}
   return{id,rar:rollWRar(bonus)};
 }
-function newDraft(mode,slot,bonus){const st=mode==='unlock'&&slot===0&&!S.hp.some((h,i)=>i>0&&h);const a=rollWeapon(bonus,null,st);const b=rollWeapon(bonus,Math.floor(a.id/100),st);R.draft={mode,slot,bonus,opts:[a,b]};R.paused=true;showDraft();}
+function newDraft(mode,slot,bonus){const st=mode==='unlock'&&slot===0&&!S.hp.some((h,i)=>i>0&&h);const a=rollWeapon(bonus,null,st);const b=rollWeapon(bonus,Math.floor(a.id%1000/100),st);R.draft={mode,slot,bonus,opts:[a,b]};R.paused=true;showDraft();}
 function statLines(w,i){
   const save=S.hp[i];S.hp[i]={lvl:save?save.lvl:1,w};const st=wStats(i);S.hp[i]=save;
   const b=wb(w.id),L=[];
@@ -1128,7 +1157,7 @@ function statLines(w,i){
   L.push(`${st.kind==='beam'||st.kind==='cone'?'Ticks':'Fire rate'} ${st.rate.toFixed(2)}/s`+(st.pellets>1?` · ${st.pellets} ${st.kind==='beam'?'beams':st.kind==='rail'?'rails':st.kind==='chain'?'chains':st.kind==='cone'?'width':'projectiles'}`:''));
   const ex=[];if(st.pierce)ex.push('Pierce '+st.pierce);if(st.chains)ex.push(st.chains+' jumps');if(st.aoe)ex.push('Blast '+Math.round(st.aoe));if(st.range)ex.push('Range '+Math.round(st.range));if(st.homing)ex.push('Homing');if(st.crit)ex.push('+'+Math.round(st.crit*100)+'% crit');if(st.critMult)ex.push('+'+Math.round(st.critMult*100)+'% crit dmg');
   if(ex.length)L.push(ex.join(' · '));
-  return `<div class="wl">${b.desc}</div><div class="wl" style="color:#ffd27a">${wp(w.id)[0]}: ${wp(w.id)[1]}</div><div class="wl" style="color:${we(w.id).col}">${we(w.id).desc}</div><div class="wl stats">${L.join('<br>')}</div>`;
+  return `<div class="wl">${b.desc}</div><div class="wl" style="color:#ffd27a">${wp(w.id)[0]}: ${wp(w.id)[1]}</div><div class="wl" style="color:${we(w.id).col}">${we(w.id).desc}</div>${wsx(w.id)[0]?`<div class="wl" style="color:#9fe6ff">${wsx(w.id)[0]}: ${wsx(w.id)[1]}</div>`:''}<div class="wl stats">${L.join('<br>')}</div>`;
 }
 function wCardHtml(w,i,k){const rc=WRAR[w.rar][1],isNew=!S.found.includes(w.id);
   return `<div class="dcard" style="border-color:${rc};box-shadow:0 0 16px ${rc}33"><div class="row between"><span class="wtag">${wNo(w.id)}</span>${isNew?'<span class="newb">NEW</span>':'<span class="wtag">owned</span>'}</div>
@@ -1139,7 +1168,7 @@ function showDraft(){
   const d=R.draft;if(!d)return;
   const slot=d.mode==='cache'?(d.slot??S.hp.findIndex(h=>h&&h.w)):d.slot;const i=Math.max(0,slot);
   const title=d.mode==='cache'?'Weapon Cache':'Hardpoint '+(d.slot+1)+' online';
-  openModal(`<h2>${title}</h2><div class="note" style="margin-bottom:8px">Choose 1 of 2 · Codex ${S.found.length}/1000</div><div class="dgrid">${d.opts.map((w,k)=>wCardHtml(w,i,k)).join('')}</div>
+  openModal(`<h2>${title}</h2><div class="note" style="margin-bottom:8px">Choose 1 of 2 · Codex ${S.found.length}/${fmt(POOL)}</div><div class="dgrid">${d.opts.map((w,k)=>wCardHtml(w,i,k)).join('')}</div>
   <div class="row" style="gap:8px;margin-top:10px"><button class="btn" data-act="reroll" data-cost="5" data-cur="c">⟳ Reroll both · 5 ◆</button>${d.mode==='cache'?'<button class="btn o" data-act="scrapcache">Scrap for 3 ◆</button>':''}</div>`,'draft');
 }
 function pickDraft(k){
@@ -1161,9 +1190,9 @@ function gainCache(src){S.caches++;toast('▣ Weapon Cache from '+src+' — open
 function showWInfo(i){const h=S.hp[i];if(!h||!h.w)return;const w=h.w;
   openModal(`<button class="x" data-act="close">✕</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · Hardpoint ${i+1}</div></div></div>${statLines(w,i)}`,'info');}
 function showCodex(){
-  let h=`<button class="x" data-act="close">✕</button><h2>Weapon Codex</h2><div class="note" style="margin-bottom:10px">${S.found.length} of 1,000 weapons discovered. A weapon counts once you take it from a draft. 10 bases × 20 prefixes × 5 elements.</div>`;
-  BASES.forEach((b,bi)=>{const n=S.found.filter(id=>Math.floor(id/100)===bi).length;h+=`<div class="stat"><span>${b.name}</span><b>${n}/100</b></div><div class="pbar" style="margin:0 0 6px"><i style="width:${n}%;background:var(--cyan)"></i></div>`;});
-  h+=`<div class="h" style="margin-top:10px">Prefixes</div><div class="note">${PREFIX.map(p=>`<b style="color:#ffd27a">${p[0]}</b> ${p[1]}`).join(' · ')}</div><div class="h" style="margin-top:10px">Elements</div><div class="note">${ELEM.map(e=>`<span style="color:${e.col}">${e.desc}</span>`).join('<br>')}</div>`;
+  let h=`<button class="x" data-act="close">✕</button><h2>Weapon Codex</h2><div class="note" style="margin-bottom:10px">${S.found.length} of 12,000 weapons discovered. A weapon counts once you take it from a draft. 10 bases × 20 prefixes × 5 elements × 12 suffixes.</div>`;
+  BASES.forEach((b,bi)=>{const n=S.found.filter(id=>Math.floor(id%1000/100)===bi).length;h+=`<div class="stat"><span>${b.name}</span><b>${n}/1,200</b></div><div class="pbar" style="margin:0 0 6px"><i style="width:${n/12}%;background:var(--cyan)"></i></div>`;});
+  h+=`<div class="h" style="margin-top:10px">Prefixes</div><div class="note">${PREFIX.map(p=>`<b style="color:#ffd27a">${p[0]}</b> ${p[1]}`).join(' · ')}</div><div class="h" style="margin-top:10px">Suffixes</div><div class="note">${SUFFIX.slice(1).map(x=>`<b style="color:#9fe6ff">${x[0]}</b> ${x[1]}`).join(' · ')}</div><div class="h" style="margin-top:10px">Elements</div><div class="note">${ELEM.map(e=>`<span style="color:${e.col}">${e.desc}</span>`).join('<br>')}</div>`;
   openModal(h,'codex');
 }
 function useAbility(k){
@@ -1218,7 +1247,7 @@ function loop(now){
 }
 function step(now){
   let dt=(now-last)/1000;last=now;if(dt>.05)dt=.05;if(dt<0)dt=0;
-  if(!R.paused)update(dt);else{R.time+=dt*.2;}draw();
+  if(!R.paused){update(dt);if(S.speed===2&&!R.paused)update(dt);}else{R.time+=dt*.2;}draw();
   uiT+=dt;panelT+=dt;saveT+=dt;
   if(uiT>.15){uiT=0;hud();updatePanel();}
   if(panelT>1){panelT=0;if(!R.pdown&&!$('#modal').classList.contains('on'))renderPanel();if(modalKind==='missions'&&!R.pdown)showMissions();}
