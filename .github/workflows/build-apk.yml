@@ -23,6 +23,9 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Stamp build number
+        run: sed -i "s/const BUILD='dev'/const BUILD='${{ github.run_number }}'/" www/index.html
+
       - name: Build APK
         env:
           VERSION_CODE: ${{ github.run_number }}

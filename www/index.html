@@ -297,6 +297,7 @@ const MT=[
 ];
 
 /* ================= STATE ================= */
+const BUILD='dev';
 const SAVE_KEY='mechsiege_hivewar_v1';
 function newState(){return{money:50,crystals:10,cores:0,prestiges:0,wave:1,maxWaveRun:1,bestWave:1,farm:false,
   hp:[{lvl:1,w:null},null,null,null,null,null],found:[],caches:0,tree:{},modules:[],equipped:[null,null,null,null],slots:4,nextId:1,
@@ -314,7 +315,8 @@ function load(){
       for(const k of ['cannon','laser','missile','tesla','flamer','rail']){if(o.weapons[k]>0){S.hp[i]={lvl:o.weapons[k],w:{id:map[k]*100+Math.floor(Math.random()*100),rar:0}};i++;}}if(!S.hp[0])S.hp[0]={lvl:1,w:null};delete S.weapons;}S.stats=Object.assign(newState().stats,o.stats||{});S.abilities=Object.assign(newState().abilities,o.abilities||{});
     while(S.equipped.length<S.slots)S.equipped.push(null);}}catch(e){}
 }
-function save(){S.last=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+let noSave=false;
+function save(){if(noSave)return;S.last=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
 
 const lvl=id=>S.tree[id]||0;
 function modById(id){return S.modules.find(m=>m.id===id)}
@@ -1055,7 +1057,7 @@ function showSettings(){
   <div class="row between card"><span>Sound</span><button class="btn" data-act="sound">${S.sound?'ON':'OFF'}</button></div>
   <div class="card">${statsHtml()}</div>
   <div class="note" style="margin:8px 0">Progress saves automatically on this device. While you're away you earn ${Math.round(D.offline*100)}% of your scrap rate (up to 8 hours).</div>
-  <button class="btn o" data-act="reset1">Reset all progress</button>`,'settings');
+  <div class="row" style="gap:8px"><button class="btn" data-act="restart">⟳ Restart game</button><button class="btn o" data-act="reset1">Reset all progress</button></div><div class="note" style="margin-top:10px">Build ${BUILD}</div>`,'settings');
 }
 
 /* actions */
@@ -1097,7 +1099,8 @@ document.addEventListener('click',ev=>{
     case 'settings':showSettings();break;
     case 'sound':S.sound=!S.sound;showSettings();break;
     case 'reset1':openModal(`<h2>Reset everything?</h2><p class="note">This deletes all progress, cores, modules and crystals.</p><div class="row" style="gap:10px;margin-top:12px"><button class="btn o" data-act="reset2">Delete save</button><button class="btn" data-act="close">Cancel</button></div>`);break;
-    case 'reset2':try{localStorage.removeItem(SAVE_KEY)}catch(e){}S=newState();resetRun();recalc();S.hull=D.hull;fillMissions();startWave();closeModal();renderPanel();break;
+    case 'reset2':noSave=true;try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload();break;
+    case 'restart':save();location.reload();break;
     case 'close':closeModal();break;
     case 'farm':S.farm=!S.farm;toast(S.farm?'Farm mode: repeating Wave '+S.wave:'Auto-advance ON');break;
     case 'boost':{const now=Date.now();if(now<S.boostCd){toast('Boost recharging');break;}S.boostEnd=Math.min(Math.max(now,S.boostEnd)+5*60e3,now+30*60e3);S.boostCd=now+3*60e3;toast('Scrap x2 boost +5 min','#ffa62b');snd(700,.25,'triangle',.05,2);break;}
@@ -1197,9 +1200,11 @@ let last=performance.now(),uiT=0,panelT=0,saveT=0;
 const fin=o=>isFinite(o.x)&&isFinite(o.y);
 function sanitize(){R.parts=R.parts.filter(p=>fin(p)&&isFinite(p.size));R.scorch=R.scorch.filter(s=>fin(s)&&isFinite(s.r));R.pr=R.pr.filter(fin);R.ep=R.ep.filter(fin);R.orbs=R.orbs.filter(fin);R.nums=R.nums.filter(fin);R.strikes=R.strikes.filter(fin);
   for(const e of R.en)if(!fin(e)){e.x=VW*.8;e.y=-20;e.vx=e.vy=0;}for(const d of R.drones)if(!fin(d)){d.x=MX;d.y=MY-30;}R.beams=R.beams.filter(b=>isFinite(b.x1+b.y1+b.x2+b.y2));R.arcs=[];if(!isFinite(R.aim))R.aim=-.5;}
-let errN=0;
+let errN=0,lastFrame=performance.now(),rafId=0;
+setInterval(()=>{if(!document.hidden&&performance.now()-lastFrame>1500){cancelAnimationFrame(rafId);last=performance.now();rafId=requestAnimationFrame(loop);}},1000);
 function loop(now){
-  requestAnimationFrame(loop);
+  lastFrame=performance.now();
+  rafId=requestAnimationFrame(loop);
   try{step(now);errN=0;}catch(e){errN++;try{console.error(e);sanitize();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}catch(_){}
     if(errN===30)toast('Recovered from a glitch','#ff4d5e');}
 }
