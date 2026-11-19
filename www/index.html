@@ -279,6 +279,7 @@ const EN={
 };
 const TREE=[
   {id:'target',name:'Targeting Core',desc:'+15% weapon damage',p:null,c:100,r:1.6,max:25},
+  {id:'drill',name:'Mining Drill',desc:'+20% damage to blocks',p:'target',c:400,r:1.55,max:40},
   {id:'optics',name:'Crit Optics',desc:'+2% crit chance',p:'target',c:900,r:1.7,max:15},
   {id:'amp',name:'Crit Amplifier',desc:'+30% crit damage',p:'optics',c:2e4,r:1.8,max:15},
   {id:'overclock',name:'Overclock',desc:'+6% fire rate',p:'target',c:3e3,r:1.75,max:15},
@@ -362,6 +363,7 @@ function recalc(){
   D.scrap=(1+.08*lvl('drones')+.12*lvl('magnet'))*(1+modSum('scavenger')/100)*core*D.upInc;
   D.drones=lvl('drones');
   D.boss=1+.5*lvl('hivebreaker');
+  D.drill=1+.2*lvl('drill');
   D.prospect=lvl('prospector');
   D.offline=.2+.1*lvl('vault');
   refreshWeapons();
@@ -462,13 +464,14 @@ function buildFloor(){
 const T=30,INF=1e9;
 const BT=[
   {n:'Rock',hp:1,val:1,top:'#6b5442',side:'#3d2f25'},
-  {n:'Dense Rock',hp:2.4,val:2,top:'#4f545d',side:'#2c2f35'},
-  {n:'Copper',hp:1.6,val:4,top:'#6b5442',side:'#3d2f25',ore:'#ff8a3a'},
-  {n:'Iron',hp:2.2,val:6,top:'#55595f',side:'#33363a',ore:'#e3eef7'},
-  {n:'Gold',hp:3,val:12,top:'#5a4a33',side:'#33291b',ore:'#ffd84d'},
-  {n:'Crystal',hp:4,val:18,top:'#23465a',side:'#132a36',ore:'#7ff3ff',gem:1},
-  {n:'Hive Flesh',hp:1.8,val:3,top:'#5a2350',side:'#341330',ore:'#ff4d9a'},
+  {n:'Dense Rock',hp:3,val:2,top:'#4f545d',side:'#2c2f35'},
+  {n:'Copper',hp:2.5,val:5,top:'#6b5442',side:'#3d2f25',ore:'#ff8a3a'},
+  {n:'Iron',hp:4,val:9,top:'#55595f',side:'#33363a',ore:'#e3eef7'},
+  {n:'Gold',hp:7,val:18,top:'#5a4a33',side:'#33291b',ore:'#ffd84d'},
+  {n:'Crystal',hp:12,val:30,top:'#23465a',side:'#132a36',ore:'#7ff3ff',gem:1},
+  {n:'Hive Flesh',hp:3.5,val:4,top:'#5a2350',side:'#341330',ore:'#ff4d9a'},
   {n:'Bedrock',hp:Infinity,val:0,top:'#16191d',side:'#0c0e10'},
+  {n:'Obsidian',hp:30,val:60,top:'#1f1733',side:'#0f0a1a',ore:'#a77bff'},
 ];
 const BED=7,N8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 const PSIZE=[56,72,90,110,132],PNAME=['Small','Medium','Large','Huge','Colossal'];
@@ -489,7 +492,7 @@ function genWorld(seed,g,p){
   // ore veins (richer far from the landing zone and on later planets)
   const veins=Math.floor(n*n/45);
   for(let v=0;v<veins;v++){let x=1+Math.floor(rng()*(n-2)),y=1+Math.floor(rng()*(n-2));const d=Math.hypot(x-c,y-c)/(n/2);
-    const r=rng()*(1+d*.8+(planetIdx(g,p)-1)*.08);const t=r>1.45?5:r>1.15?4:r>.75?3:2;const len=3+Math.floor(rng()*7);
+    const r=rng()*(1+d*.8+(planetIdx(g,p)-1)*.08);const t=r>1.75&&d>.55?8:r>1.45?5:r>1.15?4:r>.75?3:2;const len=3+Math.floor(rng()*7);
     for(let k=0;k<len;k++){if(inb(x,y))G[y*n+x]=t;x+=Math.floor(rng()*3)-1;y+=Math.floor(rng()*3)-1;}}
   // caves
   const caves=3+p+g;
@@ -533,7 +536,8 @@ function loadWorld(o){
 function solidT(tx,ty){if(!W||tx<0||ty<0||tx>=W.n||ty>=W.n)return true;return W.g[ty*W.n+tx]>=0}
 const solidAt=(x,y)=>solidT(Math.floor(x/T),Math.floor(y/T));
 function reveal(cx,cy,r){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){if(x*x+y*y>r*r)continue;const tx=cx+x,ty=cy+y;if(tx<0||ty<0||tx>=W.n||ty>=W.n)continue;W.rev[ty*W.n+tx]=1;}W.miniDirty=true}
-function blockFull(i){return hpScale(S.wave)*.5*BT[W.g[i]].hp*wHpM()}
+function distM(i){const n=W.n,x=i%n,y=(i/n)|0,c=n/2,d=Math.min(1,Math.hypot(x+.5-c,y+.5-c)/(n/2));return 1+2*Math.pow(d,1.5)}
+function blockFull(i){return hpScale(S.wave)*3*BT[W.g[i]].hp*distM(i)*wHpM()}
 function blockObj(tx,ty){
   const i=ty*W.n+tx;const t=W.g[i];if(t<0||t===BED)return null;
   let o=R.bo.get(i);if(o&&!o.dead)return o;
@@ -606,7 +610,7 @@ function spawnTick(dt){
   R.spawnT=Math.max(.8,3.4-S.wave*.04)*rnd(.7,1.3);
   // a reachable spot 9-20 tiles away along the tunnels
   const cand=[];for(const i of W.order){const d=W.flow[i];if(d>=9&&d<=20)cand.push(i);if(cand.length>400)break;}
-  const n=2+Math.floor(Math.random()*4)+Math.floor(S.wave/15);
+  const n=3+Math.floor(Math.random()*5)+Math.floor(S.wave/10);
   if(cand.length){const i=cand[Math.floor(Math.random()*cand.length)];const x=(i%W.n+.5)*T,y=(((i/W.n)|0)+.5)*T;const type=pickType(S.wave);
     for(let k=0;k<n;k++){const t=k===0||Math.random()<.7?type:pickType(S.wave);if(t==='flyer')continue;R.en.push(mkEnemy(t,x+rnd(-8,8),y+rnd(-8,8),null,true));}}
   if(S.wave>=8&&Math.random()<.35){const a=Math.random()*TAU;for(let k=0;k<2+Math.floor(S.wave/20);k++)R.en.push(mkEnemy('flyer',MX+Math.cos(a)*420+rnd(-20,20),MY+Math.sin(a)*320+rnd(-20,20),null,true));}
@@ -618,7 +622,7 @@ function spawnGuardian(){
   banner(nq>1?'TWIN GUARDIANS ×'+T2.toFixed(1):'PLANET GUARDIAN ×'+T2.toFixed(1),'#ff4d9a');noise(.15,.8);toast('The Guardian is burrowing toward you!','#ff4d9a');
 }
 function recTier(){ // highest tier that still gives the best scrap per minute (calibrated by simulation)
-  const base=hpScale(S.wave)*.5*Math.pow(bossThreat(),.85),dps=Math.max(1,totalDps());let r=0;for(let i=0;i<DIFF.length;i++)if(base*DIFF[i].hp/dps<=.01)r=i;return r}
+  const base=hpScale(S.wave)*3*Math.pow(bossThreat(),.85)/D.drill,dps=Math.max(1,totalDps());let r=0;for(let i=0;i<DIFF.length;i++)if(base*DIFF[i].hp/dps<=.01)r=i;return r}
 function showPlanets(){
   const rt=recTier(),cur=W.diff||0;
   let h=`<button class="x" data-act="close">✕</button><h2>Galaxy ${W.gal} · Planet ${W.pl}</h2><div class="note" style="margin-bottom:8px">${PNAME[W.pl-1]} world, ${W.n}×${W.n} tiles, ${fmt(W.total)} blocks. Gear threat ×${bossThreat().toFixed(1)} already makes everything tougher. Pick a difficulty: it applies to this planet (restarts it) and every planet after.</div>`;
@@ -638,8 +642,8 @@ function pickType(w){
   let sum=0;for(const x of t)sum+=x[1];let r=Math.random()*sum;for(const x of t){r-=x[1];if(r<=0)return x[0];}return 'crawler';
 }
 function mkEnemy(type,x,y,sq,counted){
-  const d=EN[type],hp=hpScale(S.wave)*d.hp*wHpM();
-  return{type,def:d,x,y,vx:0,vy:0,hp,max:hp,r:d.r,spd:d.spd*rnd(.9,1.12),armor:d.armor||0,boss:!!d.boss,sq,ox:rnd(-1,1),oy:rnd(-1,1),t:Math.random()*10,flash:0,atk:rnd(.3,1),counted,ang:Math.PI*.8,burn:0,burnD:0,acc:0,accT:0,spawnT:4,dead:false,dmgM:Math.sqrt(dTier().hp)*Math.pow(bossThreat(),.3)};
+  const d=EN[type],hp=hpScale(S.wave)*d.hp*2.5*wHpM();
+  return{type,def:d,x,y,vx:0,vy:0,hp,max:hp,r:d.r,spd:d.spd*rnd(.9,1.12),armor:d.armor||0,boss:!!d.boss,sq,ox:rnd(-1,1),oy:rnd(-1,1),t:Math.random()*10,flash:0,atk:rnd(.3,1),counted,ang:Math.PI*.8,burn:0,burnD:0,acc:0,accT:0,spawnT:4,dead:false,dmgM:1.6*Math.sqrt(dTier().hp)*Math.pow(bossThreat(),.3)};
 }
 function edgePoint(){const side=Math.floor(Math.random()*4);
   if(side===0)return[VW*rnd(.02,.98),-30];if(side===1)return[VW*rnd(.02,.98),VH+30];if(side===2)return[-30,VH*rnd(.05,.95)];return[VW+30,VH*rnd(.05,.95)];}
@@ -685,7 +689,7 @@ function earn(v){v*=D.scrap*(boostOn()?2:1);S.money+=v;S.stats.earned+=v;R.incAc
 function addNum(x,y,v,crit){if(R.nums.length>70)R.nums.shift();R.nums.push({x:x+rnd(-6,6),y,v,crit,life:crit?.9:.65,max:crit?.9:.65})}
 function hit(t,dmg,crit,o){
   if(t.dead)return;o=o||{};
-  if(t.isBlock){t.hp-=dmg;t.flash=.07;W.hp[t.i]=Math.max(.0001,t.hp);if(t.hp<=0)killBlock(t);return;}
+  if(t.isBlock){dmg*=D.drill;t.hp-=dmg;t.flash=.07;W.hp[t.i]=Math.max(.0001,t.hp);if(t.hp<=0)killBlock(t);return;}
   if(t.boss||t.isHive)dmg*=D.boss;
   if(t.armor&&!o.pierce)dmg*=1-t.armor;
   t.hp-=dmg;t.flash=.07;
