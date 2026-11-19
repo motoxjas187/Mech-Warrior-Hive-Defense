@@ -332,7 +332,7 @@ let S=newState();
 const D={};
 const R={en:[],sq:[],hives:[],pr:[],ep:[],arcs:[],beams:[],parts:[],nums:[],scorch:[],orbs:[],drones:[],strikes:[],
   wt:{},cd:{overdrive:0,orbital:0,repair:0},od:0,aim:-0.5,time:0,shake:0,hurtT:0,focus:null,wv:null,clearT:0,banner:null,
-  ws:[],beamDraw:[],bo:new Map(),cam:{x:0,y:0},mech:{path:[],dig:null,retarget:0,moving:false},spawnT:4,flameDraw:[],paused:false,draft:null,leechT:0,incBuf:[],incAcc:0,incT:0,spin:0,sndN:0,pdown:false,hiddenAt:0};
+  ws:[],beamDraw:[],bo:new Map(),chunks:[],kickF:0,cam:{x:0,y:0},mech:{path:[],dig:null,retarget:0,moving:false},spawnT:4,flameDraw:[],paused:false,draft:null,leechT:0,incBuf:[],incAcc:0,incT:0,spin:0,sndN:0,pdown:false,hiddenAt:0};
 
 function load(){
   try{const raw=localStorage.getItem(SAVE_KEY);if(raw){const o=JSON.parse(raw);const b=newState();S=Object.assign(b,o);
@@ -514,7 +514,7 @@ function newPlanet(g,p,seed,diff){
   W={seed,diff,gal:g,pl:p,n:w.n,g:w.g,total:w.total,destroyed:0,dest:new Uint8Array(w.n*w.n),rev:new Uint8Array(w.n*w.n),hp:new Float32Array(w.n*w.n),
      flow:new Int32Array(w.n*w.n),order:[],hiveDefs:w.hives,hd:[],steps:0,pen:0,gSpawned:false,gDead:false,clearT:0,flowT:0,flowDirty:true,miniDirty:true};
   MX=(w.c+.5)*T;MY=(w.c+.5)*T;R.cam={x:MX,y:MY};
-  R.en=[];R.ep=[];R.pr=[];R.focus=null;R.bo=new Map();R.mech={path:[],dig:null,retarget:0,moving:false};R.spawnT=4;
+  R.en=[];R.ep=[];R.pr=[];R.focus=null;R.bo=new Map();R.chunks=[];R.mech={path:[],dig:null,retarget:0,moving:false};R.spawnT=4;
   buildHives();setLevel();reveal(w.c,w.c,8);
   banner(`GALAXY ${g} · PLANET ${p}`,DIFF[diff].col);toast(`${PNAME[p-1]} ${DIFF[diff].n} planet (${w.n}×${w.n}) — clear 80% to summon the Guardian`,DIFF[diff].col);
 }
@@ -554,7 +554,7 @@ function killBlock(o){
   earn(rewScale(S.wave)*.5*BT[t].val*wRewM());
   if(BT[t].gem&&Math.random()<.6){S.crystals++;R.parts.push({x:o.x,y:o.y,vx:0,vy:-30,life:.8,max:.8,col:'#7ff3ff',size:18,type:'ring'});}
   const col=BT[t].ore||BT[t].top;
-  for(let k=0;k<5;k++){const a=Math.random()*TAU,v=rnd(40,120);R.parts.push({x:o.x,y:o.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50,life:rnd(.4,.8),max:.8,col:k<2?col:BT[t].side,size:rnd(2,5),type:'debris',g:240});}
+  shatterBlock(o,t,MX,MY-30);if(Math.random()<.35)noise(.025,.12);
   R.parts.push({x:o.x,y:o.y,vx:rnd(-10,10),vy:-20,life:.7,max:.7,col:'#3a3530',size:12,type:'smoke'});
   if(BT[t].val>=4||Math.random()<.3)R.orbs.push({x:o.x,y:o.y,vx:rnd(-40,40),vy:rnd(-60,0),t:0});
   if(Math.random()<.12)snd(rnd(140,220),.06,'square',.015);
@@ -636,6 +636,48 @@ function planetCleared(){
   newPlanet(g,p);save();
 }
 
+/* ================= RUBBLE PHYSICS ================= */
+const CHUNK_MAX=320,GRAV=720;
+function addChunk(c){R.chunks.push(c);if(R.chunks.length>CHUNK_MAX)R.chunks.splice(0,R.chunks.length-CHUNK_MAX);}
+function mkChunk(x,y,z,vx,vy,vz,s,top,side,life){return{x,y,z,vx,vy,vz,rot:Math.random()*TAU,vr:rnd(-14,14),s,top,side,life,max:life}}
+// a destroyed block splits into a 3x3 of tumbling chunks plus crumbs, thrown away from the hit
+function shatterBlock(o,t,fx,fy){
+  const b=BT[t],g=3,cs=T/g;let ax=o.x-fx,ay=o.y-fy;const ad=Math.hypot(ax,ay)||1;ax/=ad;ay/=ad;
+  for(let gy=0;gy<g;gy++)for(let gx=0;gx<g;gx++){
+    const cx=o.x-T/2+(gx+.5)*cs,cy=o.y-T/2+(gy+.5)*cs,ox=cx-o.x,oy=cy-o.y,sp=rnd(40,150);
+    const ore=b.ore&&Math.random()<.45;
+    addChunk(mkChunk(cx,cy,rnd(6,16),ox*5+ax*sp*.7+rnd(-35,35),oy*5+ay*sp*.7+rnd(-35,35),rnd(90,260),cs*rnd(.6,1),ore?b.ore:b.top,b.side,rnd(3.5,6)));}
+  for(let k=0;k<7;k++){const a=Math.random()*TAU,v=rnd(50,170);addChunk(mkChunk(o.x+rnd(-8,8),o.y+rnd(-8,8),rnd(4,14),Math.cos(a)*v,Math.sin(a)*v,rnd(60,200),rnd(2,4),k<3&&b.ore?b.ore:b.side,b.side,rnd(2,3.5)));}
+}
+// a hit knocks a small chip off the face toward the shooter
+function chipBlock(o,sx,sy){const g=W.g[o.i];if(g<0||g===BED)return;const b=BT[g];
+  const a=Math.atan2(sy-o.y,sx-o.x)+rnd(-.9,.9),v=rnd(60,160);
+  addChunk(mkChunk(o.x+Math.cos(a)*T*.45,o.y+Math.sin(a)*T*.45,rnd(4,16),Math.cos(a)*v,Math.sin(a)*v,rnd(40,160),rnd(2,4.5),b.ore&&Math.random()<.4?b.ore:b.top,b.side,rnd(1.4,2.4)));}
+function kickChunks(x,y,r,f){for(const c of R.chunks){if(c.z>3)continue;const dx=c.x-x,dy=c.y-y;if(dx>r||dx<-r||dy>r||dy<-r)continue;const d=Math.hypot(dx,dy)||1;if(d<r){const imp=(r-d)*7*f;c.vx+=dx/d*imp;c.vy+=dy/d*imp;c.vz+=imp*.25;c.vr+=rnd(-5,5);if(c.life<1.2)c.life=1.2;}}}
+function blastChunks(x,y,r,pw){for(const c of R.chunks){const dx=c.x-x,dy=c.y-y,d=Math.hypot(dx,dy)||1;if(d>r)continue;const k=(1-d/r)*pw;c.vx+=dx/d*k;c.vy+=dy/d*k;c.vz+=k*.7;c.vr+=rnd(-15,15);if(c.life<1.5)c.life=1.5;}}
+function updChunks(dt){
+  const fr=Math.pow(.015,dt),rf=Math.pow(.04,dt);
+  for(const c of R.chunks){c.life-=dt;
+    if(c.z>0||c.vz>0){c.vz-=GRAV*dt;c.z+=c.vz*dt;if(c.z<=0){c.z=0;if(c.vz<-70){c.vz=-c.vz*.38;c.vx*=.65;c.vy*=.65;c.vr*=.55;}else c.vz=0;}}
+    if(c.z===0){c.vx*=fr;c.vy*=fr;c.vr*=rf;}
+    const nx=c.x+c.vx*dt;if(c.z<T&&solidAt(nx,c.y)){c.vx*=-.45;}else c.x=nx;
+    const ny=c.y+c.vy*dt;if(c.z<T&&solidAt(c.x,ny)){c.vy*=-.45;}else c.y=ny;
+    c.rot+=c.vr*dt;}
+  if(R.mech&&R.mech.moving)kickChunks(MX,MY,24,1);
+  R.kickF^=1;if(R.kickF){let n=0;for(const e of R.en){if(e.def.fly||e.dead)continue;kickChunks(e.x,e.y,e.r+5,.7);if(++n>40)break;}}
+  R.chunks=R.chunks.filter(c=>c.life>0);
+}
+function drawChunks(){
+  const L=R.cam.x-VW/2-20,Rr=R.cam.x+VW/2+20,Tt=R.cam.y-VH/2-30,B=R.cam.y+VH/2+30;
+  ctx.fillStyle='rgba(0,0,0,.3)';
+  for(const c of R.chunks){if(c.x<L||c.x>Rr||c.y<Tt||c.y>B||c.z<1)continue;const k=Math.max(.3,1-c.z/120);ctx.beginPath();ctx.ellipse(c.x,c.y+2,c.s*.6*k,c.s*.3*k,0,0,TAU);ctx.fill();}
+  for(const c of R.chunks){if(c.x<L||c.x>Rr||c.y<Tt||c.y>B)continue;
+    ctx.globalAlpha=Math.min(1,c.life/.7);const h=c.s/2,co=Math.cos(c.rot),si=Math.sin(c.rot),x=c.x,y=c.y-c.z;
+    const q=(dy)=>{ctx.beginPath();ctx.moveTo(x+(-h)*co-(-h)*si,y+dy+(-h)*si+(-h)*co);ctx.lineTo(x+h*co-(-h)*si,y+dy+h*si+(-h)*co);ctx.lineTo(x+h*co-h*si,y+dy+h*si+h*co);ctx.lineTo(x+(-h)*co-h*si,y+dy+(-h)*si+h*co);ctx.closePath();ctx.fill();};
+    ctx.fillStyle=c.side;q(Math.min(3,c.s*.35));ctx.fillStyle=c.top;q(0);}
+  ctx.globalAlpha=1;
+}
+
 /* ================= SPAWNING ================= */
 function pickType(w){
   const t=[['crawler',10],['stalker',w>=3?4:0],['spitter',w>=5?3:0],['flyer',w>=8?3:0],['brute',w>=6?1+w/20:0]];
@@ -689,7 +731,7 @@ function earn(v){v*=D.scrap*(boostOn()?2:1);S.money+=v;S.stats.earned+=v;R.incAc
 function addNum(x,y,v,crit){if(R.nums.length>70)R.nums.shift();R.nums.push({x:x+rnd(-6,6),y,v,crit,life:crit?.9:.65,max:crit?.9:.65})}
 function hit(t,dmg,crit,o){
   if(t.dead)return;o=o||{};
-  if(t.isBlock){dmg*=D.drill;t.hp-=dmg;t.flash=.07;W.hp[t.i]=Math.max(.0001,t.hp);if(t.hp<=0)killBlock(t);return;}
+  if(t.isBlock){dmg*=D.drill;t.hp-=dmg;t.flash=.07;if(Math.random()<(o.cont?.12:.4))chipBlock(t,MX,MY-30);W.hp[t.i]=Math.max(.0001,t.hp);if(t.hp<=0)killBlock(t);return;}
   if(t.boss||t.isHive)dmg*=D.boss;
   if(t.armor&&!o.pierce)dmg*=1-t.armor;
   t.hp-=dmg;t.flash=.07;
@@ -816,6 +858,7 @@ function fireW(s){
 }
 function explode(px,py,s,dmg,crit,r){boom(px,py,r>60?1.1:.7,s.col);for(const e of [...R.en,...R.hives,...blocksIn(px,py,r)]){if(!e.dead&&Math.hypot(e.x-px,e.y-py)<r+e.r)strike(e,s,dmg,crit);}R.shake=Math.max(R.shake,2.5);}
 function boom(x,y,s,col){
+  if(R.chunks.length)blastChunks(x,y,70*s,260*s);
   R.parts.push({x,y,vx:0,vy:0,life:.22,max:.22,col:'#fff2c9',size:16*s,type:'flash'});
   R.parts.push({x,y,vx:0,vy:0,life:.4,max:.4,col,size:22*s,type:'ring'});
   for(let i=0;i<8*s;i++){const a=Math.random()*TAU,v=rnd(40,170)*s;R.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.3,.6),max:.6,col,size:rnd(2,4),type:'spark'});}
@@ -960,6 +1003,7 @@ function update(dt){
     boom(s.x,s.y,3,'#3fe0ff');R.shake=18;noise(.25,1);R.scorch.push({x:s.x,y:s.y,r:70,a:.8});}}
   R.strikes=R.strikes.filter(s=>s.t>-.5);
   // particles
+  updChunks(dt);
   for(const p of R.parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.g)p.vy+=p.g*dt;if(p.type!=='debris'){p.vx*=.96;p.vy*=.96;}}
   R.parts=R.parts.filter(p=>p.life>0);
   for(const n of R.nums){n.life-=dt;n.y-=28*dt;}R.nums=R.nums.filter(n=>n.life>0);
@@ -1003,14 +1047,21 @@ function drawWorld(){
   // blocks, top to bottom so front faces overlap correctly
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*n+x,g=W.g[i];if(g<0)continue;const px=x*T,py=y*T,b=BT[g];
     if(!W.rev[i]&&g!==BED){ctx.fillStyle='#0a0c10';ctx.fillRect(px,py-6,T+1,T+7);continue;}
-    const o=R.bo.get(i);const F=o&&o.flash>0;
+    const o=R.bo.get(i);const F=o&&o.flash>0;const jx=F?rnd(-1.2,1.2):0;
+    if(jx){ctx.save();ctx.translate(jx,rnd(-1,1));}
     if(!solidT(x,y+1)){ctx.fillStyle=F?'#fff':b.side;ctx.fillRect(px,py+T-6,T+1,7);}
     ctx.fillStyle=F?'#fff':b.top;ctx.fillRect(px,py-6,T+1,T);
     if(!F){const h=hsh(i);ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(px,py-6,T,3);ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(px+(h*20|0),py+(hsh(i+7)*16|0)-2,5,4);
       if(b.ore){ctx.fillStyle=b.ore;for(let k=0;k<4;k++){ctx.fillRect(px+3+(hsh(i*3+k)*(T-9)|0),py-3+(hsh(i*5+k)*(T-12)|0),4,4);}
         if(g===5){ctx.globalAlpha=.25+Math.sin(R.time*3+i)*.15;ctx.fillRect(px+2,py-4,T-4,T-4);ctx.globalAlpha=1;}}
       if(g===6){ctx.fillStyle=`rgba(255,77,154,${.25+Math.sin(R.time*2.5+i)*.15})`;ctx.fillRect(px+6,py,T-12,T-14);}
-      if(o&&o.hp<o.max){const f=1-o.hp/o.max;ctx.strokeStyle=`rgba(0,0,0,${.35+f*.4})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px+T*.5,py-4);ctx.lineTo(px+T*.35,py+T*.3);ctx.lineTo(px+T*.6,py+T*.55);if(f>.4){ctx.moveTo(px+T*.35,py+T*.3);ctx.lineTo(px+T*.1,py+T*.4);}if(f>.7){ctx.moveTo(px+T*.6,py+T*.55);ctx.lineTo(px+T*.85,py+T*.35);}ctx.stroke();}}
+      if(o&&o.hp<o.max){const f=1-o.hp/o.max;
+        // chunks missing from the corners/edges grow with damage
+        const nb=Math.min(7,Math.floor(f*8));ctx.fillStyle='#10161c';
+        for(let k=0;k<nb;k++){const hh=hsh(i*7+k*31),cs=T*(.16+.16*hsh(i+k*17)*f+.08*f);const side=(hh*4)|0,along=hsh(i*11+k)*(T-cs);
+          const qx=side===0?px+along:side===1?px+T-cs:side===2?px+along:px,qy=side===0?py-6:side===1?py-6+along*.8:side===2?py+T-6-cs:py-6+along*.8;ctx.fillRect(qx,qy,cs,cs);}
+        ctx.strokeStyle=`rgba(0,0,0,${.35+f*.45})`;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(px+T*.5,py-4);ctx.lineTo(px+T*.35,py+T*.3);ctx.lineTo(px+T*.6,py+T*.55);if(f>.35){ctx.moveTo(px+T*.35,py+T*.3);ctx.lineTo(px+T*.08,py+T*.42);}if(f>.6){ctx.moveTo(px+T*.6,py+T*.55);ctx.lineTo(px+T*.9,py+T*.3);ctx.moveTo(px+T*.5,py-4);ctx.lineTo(px+T*.75,py+T*.1);}ctx.stroke();}}
+    if(jx)ctx.restore();
   }
 }
 function drawMini(){
@@ -1153,6 +1204,7 @@ function draw(){
   ctx.translate(Math.round(VW/2-R.cam.x),Math.round(VH/2-R.cam.y));
   drawWorld();
   for(const s of R.scorch){const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r);g.addColorStop(0,`rgba(8,8,10,${s.a})`);g.addColorStop(1,'rgba(8,8,10,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill();}
+  drawChunks();
   for(const h of R.hives)drawHive(h);
   // orbs
   for(const o of R.orbs){ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.arc(o.x,o.y,2.6,0,TAU);ctx.fill();}
