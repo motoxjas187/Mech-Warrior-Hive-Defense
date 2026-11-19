@@ -97,6 +97,9 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .dico{width:60px;height:60px;margin:6px auto 2px;border:1px solid #2b4459;display:grid;place-items:center;position:relative;background:#0b141c}.dico svg{width:46px;height:46px}
 .wl{font-size:11.5px;color:#b9c7d4;margin-top:6px;line-height:1.35}.wl.stats{color:var(--cyan);font-family:'Share Tech Mono',monospace;flex:1}
 .newb{font-size:10px;background:var(--green);color:#062a14;padding:1px 6px;font-weight:700;letter-spacing:1px}
+.slist{display:flex;flex-direction:column;gap:5px}
+.srow{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#0f1a24;border:1px solid #23394d;border-left:4px solid #2b4459;padding:7px 9px;width:100%}
+.srow .sn{font-size:14px;font-weight:600}
 /* tree */
 .node{display:flex;align-items:center;gap:8px;position:relative}
 .node .nm{flex:1;min-width:0}
@@ -211,7 +214,7 @@ const PREFIX=[
   ['Rapid','+35% fire rate',s=>{s.rate*=1.35}],
   ['Heavy','+50% damage, -20% fire rate',s=>{s.dmgM*=1.5;s.rate*=.8}],
   ['Piercing','+2 pierce / +2 chain jumps',s=>{s.pierce+=2;s.chains+=2;s.dmgM*=1.05}],
-  ['Twin','+1 projectile / target',s=>{s.pellets+=1;s.spread+=.05}],
+  ['Twin','+1 projectile / target (+40% dmg)',s=>{s.pellets+=1;s.spread+=.05}],
   ['Volatile','Hits explode',s=>{s.aoe=Math.max(s.aoe,34)*1.3;s.dmgM*=.95}],
   ['Vampiric','Hits repair your hull',s=>{s.leech=1;s.dmgM*=1.05}],
   ['Lucky','+10% crit chance',s=>{s.crit+=.10}],
@@ -247,7 +250,7 @@ const SUFFIX=[
   ['of the Titan','+45% damage, -15% fire rate',s=>{s.dmgM*=1.45;s.rate*=.85}],
   ['of Greed','+15% scrap income while installed',s=>{s.greed=1}],
   ['of Precision','+8% crit chance, +25% crit damage',s=>{s.crit+=.08;s.critMult+=.25}],
-  ['of Havoc','+35% blast radius or +1 projectile',s=>{if(s.aoe)s.aoe*=1.35;else s.pellets+=1}],
+  ['of Havoc','+35% blast radius, or +1 projectile (+40% dmg)',s=>{if(s.aoe)s.aoe*=1.35;else s.pellets+=1}],
   ['of Thunder','12% chance hits call lightning',s=>{s.thunder=.12}],
   ['of Overload','+15% damage & velocity, x2 in Overdrive',s=>{s.dmgM*=1.15;s.spd*=1.15;s.odM=2}],
 ];
@@ -318,7 +321,7 @@ const MT=[
 const BUILD='dev';
 const SAVE_KEY='mechsiege_hivewar_v1';
 function newState(){return{money:50,crystals:10,cores:0,prestiges:0,wave:1,maxWaveRun:1,bestWave:1,farm:false,
-  hp:[{lvl:1,w:{id:0,rar:0}},null,null,null,null,null],found:[0],caches:0,tree:{},modules:[],equipped:[null,null,null,null],slots:4,nextId:1,
+  hp:[{lvl:1,w:{id:0,rar:0}},null,null,null,null,null],found:[0],caches:0,stash:[],tree:{},modules:[],equipped:[null,null,null,null],slots:4,nextId:1,
   abilities:{overdrive:true,orbital:false,repair:false},boostEnd:0,boostCd:0,buyMode:1,missions:[],missionsDone:0,
   stats:{kills:0,brutes:0,hives:0,queens:0,fused:0,earned:0,time:0},sound:true,last:0,avgIncome:0,hull:null,firstTen:0}}
 let S=newState();
@@ -332,6 +335,7 @@ function load(){
     if(o.weapons&&!o.hp){const map={cannon:0,laser:5,missile:4,tesla:6,flamer:7,rail:8};S.hp=[null,null,null,null,null,null];let i=0;
       for(const k of ['cannon','laser','missile','tesla','flamer','rail']){if(o.weapons[k]>0){S.hp[i]={lvl:o.weapons[k],w:{id:map[k]*100+Math.floor(Math.random()*100),rar:0}};i++;}}if(!S.hp[0])S.hp[0]={lvl:1,w:null};delete S.weapons;}S.stats=Object.assign(newState().stats,o.stats||{});S.abilities=Object.assign(newState().abilities,o.abilities||{});
     while(S.equipped.length<S.slots)S.equipped.push(null);
+    if(!Array.isArray(S.stash))S.stash=[];
     if(!S.rarFix){S.rarFix=1;const cap=Math.min(5,2+S.prestiges);for(const h of S.hp)if(h&&h.w&&h.w.rar>cap)h.w.rar=cap;}}}catch(e){}
 }
 let noSave=false;
@@ -368,12 +372,15 @@ const rewScale=w=>2.5*Math.pow(1.14,w-1);
 const dmgScale=w=>Math.pow(1.09,w-1);
 const waveTotal=w=>Math.min(140,14+w*3)+(w%10===0?1:0);
 const boostOn=()=>Date.now()<S.boostEnd;
-function wStats(i){
-  const h=S.hp[i];if(!h||!h.w)return null;const id=h.w.id,b=wb(id),l=h.lvl;
+function wStats(i){const h=S.hp[i];if(!h||!h.w)return null;return wStatsW(h.w,i,h.lvl)}
+function wScore(w){return wStatsW(w,0,1).dps}
+function wStatsW(w,i,l){
+  const id=w.id,b=wb(id);
   const s={kind:b.kind,rate:b.rate,pellets:b.pellets||1,spread:b.spread||0,spd:b.spd||1000,pierce:b.pierce||0,aoe:b.aoe||0,range:b.range||0,chains:b.chains||0,
     homing:!!b.homing,big:!!b.big,dmgM:b.dmg,crit:0,critMult:0,leech:0,perk:null,bossM:1,echo:0,elM:1,greed:0,thunder:0,odM:1,el:id%5,col:we(id).col,i};
   wp(id)[2](s);wsx(id)[2](s);
-  s.dmg=HPT[i].dps*l*Math.pow(2,Math.floor(l/25))*WRAR[h.w.rar][2]*s.dmgM/(b.rate*(b.pellets||1));
+  s.dmg=HPT[i].dps*l*Math.pow(2,Math.floor(l/25))*WRAR[w.rar][2]*s.dmgM/(b.rate*(b.pellets||1));
+  {const bp=b.pellets||1;if(s.pellets>bp)s.dmg*=(bp+.4*(s.pellets-bp))/s.pellets;}
   s.dps=s.dmg*s.rate*s.pellets;
   return s;
 }
@@ -410,7 +417,7 @@ function resize(){
   const dpr=Math.min(2,window.devicePixelRatio||1);
   cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);
   sc=cv.width/VW;VH=cv.height/sc;
-  MX=VW*.2;MY=VH*.8;
+  MX=VW*.5;MY=VH*.56;
   buildFloor();
 }
 function isoBox(g,x,y,w,d,h,top,left,right){
@@ -459,12 +466,15 @@ function mkEnemy(type,x,y,sq,counted){
   const d=EN[type],hp=hpScale(S.wave)*d.hp;
   return{type,def:d,x,y,vx:0,vy:0,hp,max:hp,r:d.r,spd:d.spd*rnd(.9,1.12),armor:d.armor||0,boss:!!d.boss,sq,ox:0,oy:0,t:Math.random()*10,flash:0,atk:rnd(.3,1),counted,ang:Math.PI*.8,burn:0,burnD:0,acc:0,accT:0,spawnT:4,dead:false};
 }
+function edgePoint(){const side=Math.floor(Math.random()*4);
+  if(side===0)return[VW*rnd(.02,.98),-30];if(side===1)return[VW*rnd(.02,.98),VH+30];if(side===2)return[-30,VH*rnd(.05,.95)];return[VW+30,VH*rnd(.05,.95)];}
+function hivePos(){for(let t=0;t<30;t++){const a=Math.random()*TAU;const x=MX+Math.cos(a)*VW*.4,y=MY+Math.sin(a)*VH*.4;
+  if(x>40&&x<VW-40&&y>45&&y<VH-40&&Math.hypot(x-MX,y-MY)>140&&!R.hives.some(h=>Math.hypot(h.x-x,h.y-y)<90))return[x,y];}return[VW*.85,VH*.2];}
 function spawnSquad(n){
-  const top=Math.random()<.55;
-  const sx=top?VW*rnd(.35,1.02):VW+30,sy=top?-30:VH*rnd(.02,.5);
+  const [sx,sy]=edgePoint();
   const flank=[-1,0,1][Math.floor(Math.random()*3)];
   const a0=Math.atan2(sy-MY,sx-MX)+flank*.6;
-  const sq={flank,ax:clamp(MX+Math.cos(a0)*235,40,VW-25),ay:clamp(MY+Math.sin(a0)*235,25,VH-20),state:'march',timer:0};
+  const RR=Math.min(VW,VH)*.4;const sq={flank,ax:clamp(MX+Math.cos(a0)*RR,30,VW-30),ay:clamp(MY+Math.sin(a0)*RR*.9,25,VH-20),state:'march',timer:0};
   R.sq.push(sq);
   const type=pickType(S.wave);
   for(let i=0;i<n;i++){
@@ -476,7 +486,7 @@ function spawnSquad(n){
 }
 function spawnHive(){
   const w=S.wave;const hp=hpScale(w)*45*bossThreat();
-  R.hives.push({isHive:true,x:VW*rnd(.62,.9),y:VH*rnd(.12,.36),hp,max:hp,r:28,lvl:1,spawnT:3,alive:0,flash:0,acc:0,accT:0,t:0,dead:false});
+  const [hx,hy]=hivePos();R.hives.push({isHive:true,x:hx,y:hy,hp,max:hp,r:28,lvl:1,spawnT:3,alive:0,flash:0,acc:0,accT:0,t:0,dead:false});
   toast('⚠ A Hive has emerged — tap it to focus fire','#ff4d9a');
 }
 function startWave(){
@@ -673,7 +683,7 @@ function update(dt){
     }
     if(wv.boss&&!wv.bossSpawned&&wv.spawned>=normalTotal&&R.en.filter(e=>e.counted).length<6){
       wv.bossSpawned=true;const T=bossThreat();const nq=T>=3.5?2:1;
-      for(let k=0;k<nq;k++){const q=mkEnemy('queen',VW*(.85-k*.25),-40-k*30,null,true);q.threat=T;q.hp*=T;q.max=q.hp;q.armor=T>=1.5?.3:0;q.dmgM=Math.sqrt(T);q.volleyT=4;R.en.push(q);if(k)wv.total++;}
+      for(let k=0;k<nq;k++){const [qx,qy]=edgePoint();const q=mkEnemy('queen',qx,qy,null,true);q.threat=T;q.hp*=T;q.max=q.hp;q.armor=T>=1.5?.3:0;q.dmgM=Math.sqrt(T);q.volleyT=4;R.en.push(q);if(k)wv.total++;}
       wv.spawned++;banner(nq>1?'TWIN QUEENS  ×'+T.toFixed(1):'HIVE QUEEN  ×'+T.toFixed(1),'#ff4d9a');noise(.15,.8);
     }
     if(wv.killed>=wv.total){wv.done=true;R.clearT=1.6;banner('WAVE '+S.wave+' CLEARED','#5dff9b');snd(520,.12,'triangle',.05,1.5);}
@@ -1013,7 +1023,8 @@ function hpCard(i){
 }
 function tabMech(){
   let h=`<div class="row between" style="margin-bottom:9px"><div class="h" style="margin:0">Total DPS <b class="mono">${fmt(totalDps())}</b></div><div class="seg">${[1,10,25,'MAX'].map(m=>`<button data-act="buymode" data-v="${m}" class="${S.buyMode==m?'on':''}">${m==='MAX'?'MAX':'x'+m}</button>`).join('')}</div></div>`;
-  h+=`<div class="row between" style="margin-bottom:9px;gap:8px"><button class="btn" data-act="codex" style="flex:1">📖 Codex ${S.found.length}/${fmt(POOL)}</button>${S.caches?`<button class="btn o" data-act="opencache" style="flex:1">▣ Open Weapon Cache ×${S.caches}</button>`:`<span class="note" style="flex:1">Queens & Hives drop Weapon Caches</span>`}</div>`;
+  h+=`<div class="row between" style="margin-bottom:9px;gap:8px"><button class="btn" data-act="codex" style="flex:1">📖 Codex ${S.found.length}/${fmt(POOL)}</button><button class="btn" data-act="stash" style="flex:1">🗄 Stash ${S.stash.length}</button></div>`;
+  if(S.caches)h+=`<div class="row" style="margin-bottom:9px;gap:8px"><button class="btn o" data-act="opencache" style="flex:1">▣ Open 1 (pick 1 of 2)</button><button class="btn o" data-act="openall" style="flex:1;background:#ffa62b;color:#1a1205">▣▣ Open all ×${S.caches}</button></div>`;
   let shownLock=false;
   for(let i=0;i<6;i++){
     if(S.hp[i])h+=hpCard(i);
@@ -1105,10 +1116,21 @@ document.addEventListener('click',ev=>{
     case 'unlock':{const i=+k;if(S.money>=HPT[i].unlock&&!S.hp[i]){S.money-=HPT[i].unlock;S.hp[i]={lvl:1,w:null};newDraft('unlock',i,0);}break;}
     case 'draft':{const i=+k;if(S.hp[i]&&!S.hp[i].w)newDraft('unlock',i,0);break;}
     case 'pick':pickDraft(+k);break;
-    case 'install':{const w=R.draft&&R.draft.picked;if(w){const i=+k;S.hp[i].w=w;S.caches=Math.max(0,S.caches-1);finishDraft(w,i);}break;}
+    case 'install':{const w=R.draft&&R.draft.picked;if(w){const i=+k;if(S.hp[i].w)toStash(S.hp[i].w);S.hp[i].w=w;S.caches=Math.max(0,S.caches-1);finishDraft(w,i);}break;}
     case 'scrapcache':{if(R.draft){S.caches=Math.max(0,S.caches-1);S.crystals+=3;R.draft=null;R.paused=false;closeModal();renderPanel();toast('Cache scrapped +3 ◆','#3fe0ff');}break;}
     case 'reroll':{if(R.draft&&!R.draft.picked&&S.crystals>=5){S.crystals-=5;const d=R.draft;newDraft(d.mode,d.slot,d.bonus);}break;}
     case 'opencache':{if(S.caches>0)newDraft('cache',null,.2);break;}
+    case 'openall':openAll();break;
+    case 'stash':showStash();break;
+    case 'sitem':showStashItem(+k);break;
+    case 'automerge':{const n=autoMerge();toast(n?`Merged ${n} times`:'Need 3 weapons of the same rarity',n?'#5dff9b':null);if(n)snd(500,.3,'triangle',.05,2);showStash();break;}
+    case 'autoequip':{const n=autoEquip();toast(n?`Auto-equipped ${n} upgrade${n>1?'s':''}`:'Already running your best weapons','#5dff9b');if(modalKind==='stash')showStash();else closeModal();break;}
+    case 'scraplow':{const x=S.stash.filter(w=>w.rar<=1);let v=0;for(const w of x)v+=scrapVal(w);S.stash=S.stash.filter(w=>w.rar>1);if(x.length){earn(v/(D.scrap*(boostOn()?2:1)));toast(`Scrapped ${x.length} for $${fmt(v)}`,'#ffa62b');}showStash();break;}
+    case 'sinstall':{const i=+k,u=+b.dataset.u;const w=S.stash.find(x=>x.u===u);if(w&&S.hp[i]){S.stash=S.stash.filter(x=>x!==w);if(S.hp[i].w)toStash(S.hp[i].w);S.hp[i].w={id:w.id,rar:w.rar};recalc();renderPanel();toast(`${wName(w.id)} installed on HP${i+1}`,WRAR[w.rar][1]);showStash();}break;}
+    case 'smerge':{if(mergeInto(+k)){snd(500,.3,'triangle',.05,2);toast('Merged!','#5dff9b');}showStashItem(+k);break;}
+    case 'sscrap':{const w=S.stash.find(x=>x.u===+k);if(w){S.stash=S.stash.filter(x=>x!==w);const v=scrapVal(w);S.money+=v;S.stats.earned+=v;toast('Scrapped +$'+fmt(v),'#ffa62b');}showStash();break;}
+    case 'mergeup':{const i=+k;if(mergeUpHp(i)){snd(500,.3,'triangle',.05,2);toast('Merged up to '+WRAR[S.hp[i].w.rar][0],WRAR[S.hp[i].w.rar][1]);renderPanel();}showWInfo(i);break;}
+    case 'cachestash':{const w=R.draft&&R.draft.picked;if(w){toStash(w);S.caches=Math.max(0,S.caches-1);R.draft=null;R.paused=false;closeModal();renderPanel();toast('Sent to stash','#3fe0ff');}break;}
     case 'winfo':showWInfo(+k);break;
     case 'codex':showCodex();break;
     case 'tree':{const n=TR[k],c=treeCost(n);if(S.money>=c&&lvl(k)<n.max&&(!n.p||lvl(n.p))){S.money-=c;S.tree[k]=lvl(k)+1;recalc();snd(700,.08,'triangle',.04,1.5);renderPanel();}break;}
@@ -1181,14 +1203,80 @@ function showSlotPick(){
   const w=R.draft.picked;let h=`<h2>Install ${wName(w.id)}</h2><div class="note" style="margin-bottom:8px">Pick a hardpoint. The new weapon keeps that hardpoint's level.</div>`;
   for(let i=0;i<6;i++){const hp=S.hp[i];if(!hp)continue;const save=hp.w;hp.w=w;const nd=wStats(i).dps;hp.w=save;const od=save?wStats(i).dps:0;const up=nd>=od;
     h+=`<div class="card wcard"><div class="wmid"><div class="wtag">HP${i+1} · Lv.${hp.lvl}</div><div class="wname" style="font-size:14px;color:${save?WRAR[save.rar][1]:'#7f93a6'}">${save?wName(save.id):'Empty'}</div><div class="wsub"><span>${fmt(od*D.dmg*D.rate)} → <b style="color:${up?'#5dff9b':'#ff4d5e'}">${fmt(nd*D.dmg*D.rate)}</b> DPS</span></div></div><button class="buy" data-act="install" data-k="${i}"><small>${up?'▲ UPGRADE':'▼ SWAP'}</small><b>INSTALL</b></button></div>`;}
-  h+=`<button class="btn o" data-act="scrapcache">Keep current weapons · scrap for 3 ◆</button>`;
+  h+=`<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-act="cachestash">🗄 Send to stash</button><button class="btn o" data-act="scrapcache">Scrap for 3 ◆</button></div>`;
   openModal(h,'draft');
 }
 function finishDraft(w,i){S.stats.drafts=(S.stats.drafts||0)+1;R.draft=null;R.paused=false;closeModal();recalc();renderPanel();
   toast(`${wName(w.id)} installed on HP${i+1}`,WRAR[w.rar][1]);snd(400,.3,'sawtooth',.04,2);}
+const mergeCap=()=>Math.min(5,rarCap()+1);
+const STASH_MAX=300;
+function scrapVal(w){return rewScale(S.wave)*3*Math.pow(w.rar+1,2)}
+function toStash(w){S.stash.push({u:S.nextId++,id:w.id,rar:w.rar});if(!S.found.includes(w.id))S.found.push(w.id);
+  if(S.stash.length>STASH_MAX){S.stash.sort((a,b)=>a.rar-b.rar||wScore(a)-wScore(b));const x=S.stash.shift();earn(scrapVal(x));}}
+function openAll(){
+  const n=S.caches;if(!n)return;const before=S.found.length;const cnt=[0,0,0,0,0,0];
+  for(let k=0;k<n;k++){const a=rollWeapon(.2),b=rollWeapon(.2,Math.floor(a.id%1000/100));const w=(b.rar>a.rar||(b.rar===a.rar&&wScore(b)>wScore(a)))?b:a;toStash(w);cnt[w.rar]++;}
+  S.caches=0;S.stats.drafts=(S.stats.drafts||0)+n;
+  const m=autoMerge();
+  openModal(`<button class="x" data-act="close">✕</button><h2>Opened ${n} caches</h2><div class="note" style="margin-bottom:8px">Each cache kept the better of its 2 rolls. +${S.found.length-before} new codex entries.</div>
+  ${cnt.map((c,r)=>c?`<div class="stat"><span style="color:${WRAR[r][1]}">${WRAR[r][0]}</span><b>×${c}</b></div>`:'').join('')}
+  <div class="note" style="margin:8px 0">${m?`Auto-merged ${m} times. `:''}Stash: ${S.stash.length} weapons.</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn o" data-act="autoequip">⚡ Auto-equip best</button><button class="btn" data-act="stash">🗄 Open stash</button></div>`,'bulk');
+  renderPanel();snd(600,.4,'triangle',.05,2);
+}
+// merge 3 of same rarity -> 1 of next rarity (keeps the strongest design)
+function autoMerge(){
+  let n=0;const cap=mergeCap();
+  for(let r=0;r<cap;r++){
+    let g=S.stash.filter(w=>w.rar===r).sort((a,b)=>wScore(b)-wScore(a));
+    while(g.length>=3){const keep=g[0],used=[g[0],g[g.length-1],g[g.length-2]];g=g.filter(w=>!used.includes(w));
+      S.stash=S.stash.filter(w=>!used.includes(w));S.stash.push({u:S.nextId++,id:keep.id,rar:r+1});n++;}
+  }
+  S.stats.fused+=n;return n;
+}
+function mergeInto(u){ // merge chosen stash weapon with 2 weakest of same rarity
+  const w=S.stash.find(x=>x.u===u);if(!w||w.rar>=mergeCap())return false;
+  const f=S.stash.filter(x=>x!==w&&x.rar===w.rar).sort((a,b)=>wScore(a)-wScore(b)).slice(0,2);if(f.length<2)return false;
+  S.stash=S.stash.filter(x=>!f.includes(x));w.rar++;S.stats.fused++;return true;
+}
+function mergeUpHp(i){const h=S.hp[i];if(!h||!h.w||h.w.rar>=mergeCap())return false;
+  const f=S.stash.filter(x=>x.rar===h.w.rar).sort((a,b)=>wScore(a)-wScore(b)).slice(0,2);if(f.length<2)return false;
+  S.stash=S.stash.filter(x=>!f.includes(x));h.w={id:h.w.id,rar:h.w.rar+1};S.stats.fused++;recalc();return true;}
+function autoEquip(){
+  const slots=[];for(let i=0;i<6;i++)if(S.hp[i])slots.push(i);
+  const pool=S.stash.slice();for(const i of slots)if(S.hp[i].w)pool.push({u:S.nextId++,id:S.hp[i].w.id,rar:S.hp[i].w.rar});
+  pool.sort((a,b)=>wScore(b)-wScore(a));let changed=0;
+  // highest hardpoint tier gets the best weapon
+  const order=slots.slice().sort((a,b)=>b-a);
+  order.forEach((i,k)=>{const w=pool[k];if(!w)return;const old=S.hp[i].w;if(!old||old.id!==w.id||old.rar!==w.rar)changed++;S.hp[i].w={id:w.id,rar:w.rar};});
+  S.stash=pool.slice(order.length);recalc();renderPanel();return changed;
+}
+function stashRow(w){const rc=WRAR[w.rar][1];return `<button class="srow" data-act="sitem" data-k="${w.u}" style="border-left-color:${rc}"><span class="sn" style="color:${rc}">${wName(w.id)}</span><span class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · power ${fmt(wScore(w)*D.dmg*D.rate)}</span></button>`}
+function showStash(){
+  const list=S.stash.slice().sort((a,b)=>b.rar-a.rar||wScore(b)-wScore(a));
+  const byR=[0,0,0,0,0,0];for(const w of S.stash)byR[w.rar]++;
+  let h=`<button class="x" data-act="close">✕</button><h2>Weapon Stash <span class="wtag">${S.stash.length}/${STASH_MAX}</span></h2>
+  <div class="note" style="margin-bottom:8px">Merge 3 of the same rarity into 1 of the next (keeps the strongest design). Merging can go one rarity above your drop cap: up to <b style="color:${WRAR[mergeCap()][1]}">${WRAR[mergeCap()][0]}</b>.</div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">${S.caches?`<button class="btn o" data-act="openall">▣ Open all ${S.caches}</button>`:''}<button class="btn" data-act="automerge">⚙ Auto-merge</button><button class="btn" data-act="autoequip">⚡ Auto-equip best</button><button class="btn o" data-act="scraplow">♻ Scrap Common+Uncommon</button></div>
+  <div class="note" style="margin-bottom:6px">${byR.map((c,r)=>c?`<span style="color:${WRAR[r][1]}">${WRAR[r][0]} ${c}</span>`:'').filter(Boolean).join(' · ')||'Empty — open Weapon Caches to fill it.'}</div>
+  <div class="slist">${list.map(stashRow).join('')}</div>`;
+  openModal(h,'stash');
+}
+function showStashItem(u){
+  const w=S.stash.find(x=>x.u===u);if(!w)return showStash();
+  const same=S.stash.filter(x=>x!==w&&x.rar===w.rar).length;const canM=w.rar<mergeCap()&&same>=2;
+  let h=`<button class="x" data-act="stash">←</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]}</div></div></div>${statLines(w,S.hp.findIndex(x=>x)) }
+  <div class="h" style="margin-top:10px">Install on</div>`;
+  for(let i=0;i<6;i++){const hp=S.hp[i];if(!hp)continue;const od=hp.w?wStatsW(hp.w,i,hp.lvl).dps:0,nd=wStatsW(w,i,hp.lvl).dps;
+    h+=`<button class="srow" data-act="sinstall" data-k="${i}" data-u="${u}"><span class="sn">HP${i+1} · ${hp.w?wName(hp.w.id):'Empty'}</span><span class="wtag">${fmt(od*D.dmg*D.rate)} → <b style="color:${nd>=od?'#5dff9b':'#ff4d5e'}">${fmt(nd*D.dmg*D.rate)}</b> DPS</span></button>`;}
+  h+=`<div class="row" style="gap:8px;margin-top:10px"><button class="btn ${canM?'':'dis'}" data-act="smerge" data-k="${u}">⚙ Merge → ${w.rar<5?WRAR[w.rar+1][0]:'MAX'} (uses 2 ${WRAR[w.rar][0]})</button><button class="btn o" data-act="sscrap" data-k="${u}">♻ Scrap $${fmt(scrapVal(w))}</button></div>`;
+  openModal(h,'stash');
+}
 function gainCache(src){S.caches++;toast('▣ Weapon Cache from '+src+' — open it in the Mech tab','#ffa62b');}
 function showWInfo(i){const h=S.hp[i];if(!h||!h.w)return;const w=h.w;
-  openModal(`<button class="x" data-act="close">✕</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · Hardpoint ${i+1}</div></div></div>${statLines(w,i)}`,'info');}
+  openModal(`<button class="x" data-act="close">✕</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · Hardpoint ${i+1}</div></div></div>${statLines(w,i)}`,'info');
+  const can=h.w.rar<mergeCap()&&S.stash.filter(x=>x.rar===h.w.rar).length>=2;
+  $('#mbox').insertAdjacentHTML('beforeend',`<div class="row" style="gap:8px;margin-top:10px"><button class="btn ${can?'':'dis'}" data-act="mergeup" data-k="${i}">⚙ Merge up → ${h.w.rar<5?WRAR[h.w.rar+1][0]:'MAX'} (uses 2 ${WRAR[h.w.rar][0]} from stash)</button></div>`);}
 function showCodex(){
   let h=`<button class="x" data-act="close">✕</button><h2>Weapon Codex</h2><div class="note" style="margin-bottom:10px">${S.found.length} of 12,000 weapons discovered. A weapon counts once you take it from a draft. 10 bases × 20 prefixes × 5 elements × 12 suffixes.</div>`;
   BASES.forEach((b,bi)=>{const n=S.found.filter(id=>Math.floor(id%1000/100)===bi).length;h+=`<div class="stat"><span>${b.name}</span><b>${n}/1,200</b></div><div class="pbar" style="margin:0 0 6px"><i style="width:${n/12}%;background:var(--cyan)"></i></div>`;});
