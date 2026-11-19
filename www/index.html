@@ -152,7 +152,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
     <button class="ibtn" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="#7f93a6" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
   </div>
   <div id="wavebar">
-    <div class="wrow"><span><span id="waveTxt">Wave 1</span><button id="farmBtn" data-act="farm">AUTO ▶</button></span><span id="waveCnt">0/0</span></div>
+    <div class="wrow"><span><span id="waveTxt" data-act="planets" style="text-decoration:underline dotted;cursor:pointer">Wave 1</span><button id="farmBtn" data-act="farm">AUTO ▶</button></span><span id="waveCnt">0/0</span></div>
     <div class="pbar"><i id="wp"></i></div>
     <div class="pbar hull" id="hullBar"><i id="hp"></i><span id="hullTxt"></span></div>
   </div>
@@ -471,13 +471,18 @@ const BT=[
   {n:'Bedrock',hp:Infinity,val:0,top:'#16191d',side:'#0c0e10'},
 ];
 const BED=7,N8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-const PSIZE=[30,40,52,64,80],PNAME=['Small','Medium','Large','Huge','Colossal'];
+const PSIZE=[56,72,90,110,132],PNAME=['Small','Medium','Large','Huge','Colossal'];
+const DIFF=[{n:'Normal',hp:1,rew:1,col:'#5dff9b'},{n:'Hard',hp:5,rew:2.5,col:'#3fe0ff'},{n:'Brutal',hp:25,rew:6,col:'#ffa62b'},{n:'Nightmare',hp:125,rew:15,col:'#ff4d5e'},{n:'Abyss',hp:625,rew:40,col:'#c35bff'},{n:'Oblivion',hp:3125,rew:100,col:'#ff3dd5'},{n:'Cataclysm',hp:15625,rew:250,col:'#ff2a2a'},{n:'Singularity',hp:78125,rew:600,col:'#ffffff'}];
+const dTier=()=>W?DIFF[W.diff||0]:DIFF[0];
+// everything scales with difficulty tier and with the strength of your equipped gear
+const wHpM=()=>dTier().hp*Math.pow(bossThreat(),.85);
+const wRewM=()=>dTier().rew*Math.pow(bossThreat(),.5);
 let W=null;
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const planetIdx=(g,p)=>(g-1)*5+p;
 const planetBase=(g,p)=>(planetIdx(g,p)-1)*5+1;
 function genWorld(seed,g,p){
-  const rng=mulberry(seed),n=Math.min(120,PSIZE[p-1]+(g-1)*8),G=new Int8Array(n*n),c=n>>1;
+  const rng=mulberry(seed),n=Math.min(170,PSIZE[p-1]+(g-1)*12),G=new Int8Array(n*n),c=n>>1;
   const dDense=.16+.03*g;
   for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x;G[i]=(x===0||y===0||x===n-1||y===n-1)?BED:(rng()<dDense?1:0);}
   const inb=(x,y)=>x>0&&y>0&&x<n-1&&y<n-1;
@@ -500,25 +505,25 @@ function genWorld(seed,g,p){
   let total=0;for(let i=0;i<n*n;i++)if(G[i]>=0&&G[i]!==BED)total++;
   return{n,g:G,hives,total,c};
 }
-function newPlanet(g,p,seed){
-  seed=seed||Math.floor(Math.random()*1e9);
+function newPlanet(g,p,seed,diff){
+  seed=seed||Math.floor(Math.random()*1e9);if(diff==null)diff=S.diff||0;
   const w=genWorld(seed,g,p);
-  W={seed,gal:g,pl:p,n:w.n,g:w.g,total:w.total,destroyed:0,dest:new Uint8Array(w.n*w.n),rev:new Uint8Array(w.n*w.n),hp:new Float32Array(w.n*w.n),
+  W={seed,diff,gal:g,pl:p,n:w.n,g:w.g,total:w.total,destroyed:0,dest:new Uint8Array(w.n*w.n),rev:new Uint8Array(w.n*w.n),hp:new Float32Array(w.n*w.n),
      flow:new Int32Array(w.n*w.n),order:[],hiveDefs:w.hives,hd:[],steps:0,pen:0,gSpawned:false,gDead:false,clearT:0,flowT:0,flowDirty:true,miniDirty:true};
   MX=(w.c+.5)*T;MY=(w.c+.5)*T;R.cam={x:MX,y:MY};
   R.en=[];R.ep=[];R.pr=[];R.focus=null;R.bo=new Map();R.mech={path:[],dig:null,retarget:0,moving:false};R.spawnT=4;
   buildHives();setLevel();reveal(w.c,w.c,8);
-  banner(`GALAXY ${g} · PLANET ${p}`,'#3fe0ff');toast(`${PNAME[p-1]} planet (${w.n}×${w.n}) — clear 80% to summon the Guardian`,'#3fe0ff');
+  banner(`GALAXY ${g} · PLANET ${p}`,DIFF[diff].col);toast(`${PNAME[p-1]} ${DIFF[diff].n} planet (${w.n}×${w.n}) — clear 80% to summon the Guardian`,DIFF[diff].col);
 }
 function buildHives(){
-  R.hives=[];W.hiveDefs.forEach((d,k)=>{if(W.hd.includes(k))return;const hp=hpScale(planetBase(W.gal,W.pl)+2)*45*bossThreat();
+  R.hives=[];W.hiveDefs.forEach((d,k)=>{if(W.hd.includes(k))return;const hp=hpScale(planetBase(W.gal,W.pl)+2)*45*bossThreat()*dTier().hp;
     R.hives.push({isHive:true,k,x:(d.tx+.5)*T,y:(d.ty+.5)*T,hp,max:hp,r:28,lvl:1,spawnT:3,flash:0,acc:0,accT:0,t:0,dead:false,heard:false});});
 }
 function b64(u8){let s='';for(let i=0;i<u8.length;i+=8){let b=0;for(let k=0;k<8;k++)if(u8[i+k])b|=1<<k;s+=String.fromCharCode(b);}return btoa(s)}
 function unb64(str,n){const s=atob(str),u=new Uint8Array(n);for(let i=0;i<s.length;i++){const b=s.charCodeAt(i);for(let k=0;k<8;k++)if(b&(1<<k)&&i*8+k<n)u[i*8+k]=1;}return u}
-function worldSave(){if(!W)return;S.world={seed:W.seed,g:W.gal,p:W.pl,dest:b64(W.dest),rev:b64(W.rev),hd:W.hd,steps:W.steps,pen:W.pen,gs:W.gSpawned,mx:Math.floor(MX/T),my:Math.floor(MY/T)}}
+function worldSave(){if(!W)return;S.world={n:W.n,seed:W.seed,diff:W.diff||0,g:W.gal,p:W.pl,dest:b64(W.dest),rev:b64(W.rev),hd:W.hd,steps:W.steps,pen:W.pen,gs:W.gSpawned,mx:Math.floor(MX/T),my:Math.floor(MY/T)}}
 function loadWorld(o){
-  try{newPlanet(o.g,o.p,o.seed);const nn=W.n*W.n;const d=unb64(o.dest,nn),rv=unb64(o.rev,nn);
+  try{newPlanet(o.g,o.p,o.seed,o.diff||0);if(o.n!==W.n){toast('Planets got bigger — fresh '+PNAME[W.pl-1]+' world generated','#3fe0ff');return;}const nn=W.n*W.n;const d=unb64(o.dest,nn),rv=unb64(o.rev,nn);
     for(let i=0;i<nn;i++){if(d[i]&&W.g[i]>=0&&W.g[i]!==BED){W.g[i]=-1;W.dest[i]=1;W.destroyed++;}if(rv[i])W.rev[i]=1;}
     W.hd=o.hd||[];W.steps=o.steps||0;W.pen=o.pen||0;buildHives();
     if(o.mx!=null&&!solidT(o.mx,o.my)){MX=(o.mx+.5)*T;MY=(o.my+.5)*T;R.cam={x:MX,y:MY};}
@@ -528,7 +533,7 @@ function loadWorld(o){
 function solidT(tx,ty){if(!W||tx<0||ty<0||tx>=W.n||ty>=W.n)return true;return W.g[ty*W.n+tx]>=0}
 const solidAt=(x,y)=>solidT(Math.floor(x/T),Math.floor(y/T));
 function reveal(cx,cy,r){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){if(x*x+y*y>r*r)continue;const tx=cx+x,ty=cy+y;if(tx<0||ty<0||tx>=W.n||ty>=W.n)continue;W.rev[ty*W.n+tx]=1;}W.miniDirty=true}
-function blockFull(i){return hpScale(S.wave)*.35*BT[W.g[i]].hp}
+function blockFull(i){return hpScale(S.wave)*.5*BT[W.g[i]].hp*wHpM()}
 function blockObj(tx,ty){
   const i=ty*W.n+tx;const t=W.g[i];if(t<0||t===BED)return null;
   let o=R.bo.get(i);if(o&&!o.dead)return o;
@@ -542,7 +547,7 @@ function nearestBlock(x,y,maxTiles){const cx=Math.floor(x/T),cy=Math.floor(y/T);
 function killBlock(o){
   o.dead=true;R.bo.delete(o.i);if(R.focus===o)R.focus=null;
   const t=W.g[o.i];if(t<0)return;W.g[o.i]=-1;W.dest[o.i]=1;W.hp[o.i]=0;W.destroyed++;S.stats.blocks=(S.stats.blocks||0)+1;
-  earn(rewScale(S.wave)*.5*BT[t].val);
+  earn(rewScale(S.wave)*.5*BT[t].val*wRewM());
   if(BT[t].gem&&Math.random()<.6){S.crystals++;R.parts.push({x:o.x,y:o.y,vx:0,vy:-30,life:.8,max:.8,col:'#7ff3ff',size:18,type:'ring'});}
   const col=BT[t].ore||BT[t].top;
   for(let k=0;k<5;k++){const a=Math.random()*TAU,v=rnd(40,120);R.parts.push({x:o.x,y:o.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50,life:rnd(.4,.8),max:.8,col:k<2?col:BT[t].side,size:rnd(2,5),type:'debris',g:240});}
@@ -609,8 +614,16 @@ function spawnTick(dt){
 function spawnGuardian(){
   W.gSpawned=true;const T2=bossThreat();const nq=T2>=3.5?2:1;
   for(let k=0;k<nq;k++){const a=Math.random()*TAU;const q=mkEnemy('queen',MX+Math.cos(a)*T*12,MY+Math.sin(a)*T*10,null,true);
-    q.threat=T2;q.hp*=T2*1.5;q.max=q.hp;q.armor=T2>=1.5?.3:0;q.dmgM=Math.sqrt(T2);q.volleyT=4;q.guardian=true;q.burrow=true;R.en.push(q);}
+    q.threat=T2;q.hp*=1.5*Math.pow(T2,.15);q.max=q.hp;q.armor=T2>=1.5?.3:0;q.dmgM*=Math.sqrt(T2);q.volleyT=4;q.guardian=true;q.burrow=true;R.en.push(q);}
   banner(nq>1?'TWIN GUARDIANS ×'+T2.toFixed(1):'PLANET GUARDIAN ×'+T2.toFixed(1),'#ff4d9a');noise(.15,.8);toast('The Guardian is burrowing toward you!','#ff4d9a');
+}
+function recTier(){ // highest tier that still gives the best scrap per minute (calibrated by simulation)
+  const base=hpScale(S.wave)*.5*Math.pow(bossThreat(),.85),dps=Math.max(1,totalDps());let r=0;for(let i=0;i<DIFF.length;i++)if(base*DIFF[i].hp/dps<=.01)r=i;return r}
+function showPlanets(){
+  const rt=recTier(),cur=W.diff||0;
+  let h=`<button class="x" data-act="close">✕</button><h2>Galaxy ${W.gal} · Planet ${W.pl}</h2><div class="note" style="margin-bottom:8px">${PNAME[W.pl-1]} world, ${W.n}×${W.n} tiles, ${fmt(W.total)} blocks. Gear threat ×${bossThreat().toFixed(1)} already makes everything tougher. Pick a difficulty: it applies to this planet (restarts it) and every planet after.</div>`;
+  DIFF.forEach((d,i)=>{h+=`<div class="card wcard" style="border-color:${i===cur?d.col:''}"><div class="wmid"><div class="wname" style="color:${d.col}">${d.n}${i===rt?' <span class="newb" style="background:'+d.col+'">RECOMMENDED</span>':''}${i===cur?' <span class="wtag">· current</span>':''}</div><div class="wsub"><span>HP ×${fmt(d.hp)}</span><span>Rewards ×${d.rew}</span><span>Enemy dmg ×${Math.sqrt(d.hp).toFixed(1)}</span></div></div>${i===cur?'<button class="buy max">PLAYING</button>':`<button class="buy" data-act="setdiff" data-k="${i}"><small>RESTART PLANET</small><b>SELECT</b></button>`}</div>`;});
+  openModal(h,'planets');
 }
 function planetCleared(){
   const c=10+W.pl*2+(W.gal-1)*5;S.crystals+=c;S.stats.planets=(S.stats.planets||0)+1;gainCache('Planet');
@@ -625,8 +638,8 @@ function pickType(w){
   let sum=0;for(const x of t)sum+=x[1];let r=Math.random()*sum;for(const x of t){r-=x[1];if(r<=0)return x[0];}return 'crawler';
 }
 function mkEnemy(type,x,y,sq,counted){
-  const d=EN[type],hp=hpScale(S.wave)*d.hp;
-  return{type,def:d,x,y,vx:0,vy:0,hp,max:hp,r:d.r,spd:d.spd*rnd(.9,1.12),armor:d.armor||0,boss:!!d.boss,sq,ox:rnd(-1,1),oy:rnd(-1,1),t:Math.random()*10,flash:0,atk:rnd(.3,1),counted,ang:Math.PI*.8,burn:0,burnD:0,acc:0,accT:0,spawnT:4,dead:false};
+  const d=EN[type],hp=hpScale(S.wave)*d.hp*wHpM();
+  return{type,def:d,x,y,vx:0,vy:0,hp,max:hp,r:d.r,spd:d.spd*rnd(.9,1.12),armor:d.armor||0,boss:!!d.boss,sq,ox:rnd(-1,1),oy:rnd(-1,1),t:Math.random()*10,flash:0,atk:rnd(.3,1),counted,ang:Math.PI*.8,burn:0,burnD:0,acc:0,accT:0,spawnT:4,dead:false,dmgM:Math.sqrt(dTier().hp)*Math.pow(bossThreat(),.3)};
 }
 function edgePoint(){const side=Math.floor(Math.random()*4);
   if(side===0)return[VW*rnd(.02,.98),-30];if(side===1)return[VW*rnd(.02,.98),VH+30];if(side===2)return[-30,VH*rnd(.05,.95)];return[VW+30,VH*rnd(.05,.95)];}
@@ -684,7 +697,7 @@ function rollCrit(){return Math.random()<D.crit}
 function killEnemy(e){
   e.dead=true;
   if(R.focus===e)R.focus=null;
-  let rw=rewScale(S.wave)*e.def.rew*(e.counted?1:.5);
+  let rw=rewScale(S.wave)*e.def.rew*(e.counted?1:.5)*wRewM();
   earn(rw);
   S.stats.kills++;
   const big=e.type==='brute'||e.boss;
@@ -692,7 +705,7 @@ function killEnemy(e){
   R.scorch.push({x:e.x,y:e.y,r:e.r*(big?1.6:1.1),a:.5});if(R.scorch.length>50)R.scorch.shift();
   for(let i=0;i<(big?5:1);i++)R.orbs.push({x:e.x,y:e.y,vx:rnd(-60,60),vy:rnd(-80,10),t:0});
   if(e.type==='brute'){S.stats.brutes++;if(Math.random()<.05)dropModule(0,e.x,e.y);if(Math.random()<.02)gainCache('Brute');}
-  else if(e.boss){if(e.guardian&&!R.en.some(x=>x!==e&&x.guardian&&!x.dead)){W.gDead=true;W.clearT=2.5;banner('PLANET CLEARED','#5dff9b');}S.stats.queens++;const T=e.threat||1;const c=Math.round((6+D.prospect+Math.floor(S.wave/10))*T);if(T>=2.5)gainCache('Queen bonus');earn(rewScale(S.wave)*40*T);S.crystals+=c;gainCache('Queen');dropModule(1.5,e.x,e.y);toast('Queen destroyed  +'+c+' ◆','#ff4d9a');R.shake=14;noise(.18,.7);}
+  else if(e.boss){if(e.guardian&&!R.en.some(x=>x!==e&&x.guardian&&!x.dead)){W.gDead=true;W.clearT=2.5;banner('PLANET CLEARED','#5dff9b');}S.stats.queens++;const T=e.threat||1;const c=Math.round((6+D.prospect+Math.floor(S.wave/10))*T);if(T>=2.5)gainCache('Queen bonus');earn(rewScale(S.wave)*40*T*dTier().rew);S.crystals+=c;gainCache('Queen');dropModule(1.5,e.x,e.y);toast('Queen destroyed  +'+c+' ◆','#ff4d9a');R.shake=14;noise(.18,.7);}
   else if(Math.random()<.002)dropModule(0,e.x,e.y);
   if(big)R.shake=Math.max(R.shake,6);
   if(Math.random()<.25)noise(.035,.18);
@@ -700,7 +713,7 @@ function killEnemy(e){
 function killHive(h){
   h.dead=true;if(R.focus===h)R.focus=null;if(h.k!=null&&W&&!W.hd.includes(h.k))W.hd.push(h.k);
   const c=3+Math.floor(S.wave/10)+D.prospect+(h.lvl-1);S.crystals+=c;
-  earn(rewScale(S.wave)*30*h.lvl);S.stats.hives++;
+  earn(rewScale(S.wave)*30*h.lvl*wRewM());S.stats.hives++;
   for(let i=0;i<4;i++)setTimeout(()=>boom(h.x+rnd(-20,20),h.y+rnd(-15,15),2,'#ff4d9a'),i*120);
   R.scorch.push({x:h.x,y:h.y,r:40,a:.7});
   dropModule(.8,h.x,h.y);gainCache('Hive');R.shake=12;noise(.2,.6);snd(220,.5,'sawtooth',.05,.3);
@@ -863,7 +876,7 @@ function update(dt){
       if(fd<INF){let best=fd,bx=ex,by=ey;for(const [ox,oy] of N8){const nx=ex+ox,ny=ey+oy;if(solidT(nx,ny))continue;if(ox&&oy&&(solidT(ex+ox,ey)||solidT(ex,ey+oy)))continue;const v=W.flow[ny*n+nx];if(v<best){best=v;bx=nx;by=ny;}}
         if(best<fd){tx=(bx+.5)*T+e.ox*.3;ty=(by+.5)*T+e.oy*.3;}}
       else{tx=e.x+Math.cos(e.t*.7+e.ox)*30;ty=e.y+Math.sin(e.t*.9+e.oy)*30;if(dm>T*35)e.dead=true;}}
-    if(e.type==='spitter'&&dm<e.def.range&&los(e.x,e.y,cx,cy)){move=false;e.atk-=dt;if(e.atk<=0){e.atk=2.4;const a=Math.atan2(dy0,dx0);R.ep.push({x:e.x+Math.cos(a)*10,y:e.y+Math.sin(a)*10,vx:Math.cos(a)*190,vy:Math.sin(a)*190,dmg:e.def.dmg*dmgScale(S.wave)});snd(300,.1,'sine',.02,.5);}}
+    if(e.type==='spitter'&&dm<e.def.range&&los(e.x,e.y,cx,cy)){move=false;e.atk-=dt;if(e.atk<=0){e.atk=2.4;const a=Math.atan2(dy0,dx0);R.ep.push({x:e.x+Math.cos(a)*10,y:e.y+Math.sin(a)*10,vx:Math.cos(a)*190,vy:Math.sin(a)*190,dmg:e.def.dmg*dmgScale(S.wave)*(e.dmgM||1)});snd(300,.1,'sine',.02,.5);}}
     if(e.boss){const T=e.threat||1;
       if(!e.enraged&&e.hp<e.max*.5&&T>=1.5){e.enraged=true;e.spd*=1.6;toast('Queen ENRAGED','#ff4d5e');R.shake=8;}
       if(T>=2.5){e.volleyT-=dt;if(e.volleyT<=0){e.volleyT=e.enraged?2.5:4;const a0=Math.atan2(dy0,dx0);for(let k=-2;k<=2;k++){const a=a0+k*.18;R.ep.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,dmg:EN.queen.dmg*.35*dmgScale(S.wave)*(e.dmgM||1)});}snd(260,.2,'sine',.03,.5);}}
@@ -1242,7 +1255,7 @@ function tabMech(){
     else if(!shownLock){shownLock=true;h+=`<button class="unlock" data-act="unlock" data-k="${i}" data-cost="${HPT[i].unlock}">Unlock Hardpoint ${i+1}  ${fmt(HPT[i].unlock)} $<small>Then choose 1 of 2 weapons · max rarity ${WRAR[rarCap()][0]}</small></button>`;}
     else h+=`<div class="card locked">◼ HARDPOINT ${i+1} LOCKED ◼</div>`;
   }
-  h+=`<div class="note" style="margin-top:6px"><b style="color:#ffa62b">Income bonus ×${D.upInc.toFixed(2)}</b>: every weapon level adds +1% scrap and every tree upgrade +2%. Boss threat <b style="color:#ff4d9a">×${bossThreat().toFixed(1)}</b> (stronger weapons = stronger Queens & Hives, bigger rewards). Weapon rarity now reaches <b style="color:${WRAR[rarCap()][1]}">${WRAR[rarCap()][0]}</b>; each Reboot unlocks a higher rarity and better odds. Levels belong to the hardpoint: swap in a new weapon and it keeps the level. Every 25 levels doubles damage. Tap a weapon for its full stats. Tap an enemy or Hive to focus fire.</div>`;
+  h+=`<div class="note" style="margin-top:6px"><b style="color:#ffa62b">Income bonus ×${D.upInc.toFixed(2)}</b>: every weapon level adds +1% scrap and every tree upgrade +2%. Gear threat <b style="color:#ff4d9a">×${bossThreat().toFixed(1)}</b> (stronger weapons = tougher blocks, swarms, Hives & Guardians, bigger rewards). Tap the G·P label above the battlefield to change planet difficulty. Weapon rarity now reaches <b style="color:${WRAR[rarCap()][1]}">${WRAR[rarCap()][0]}</b>; each Reboot unlocks a higher rarity and better odds. Levels belong to the hardpoint: swap in a new weapon and it keeps the level. Every 25 levels doubles damage. Tap a weapon for its full stats. Tap an enemy or Hive to focus fire.</div>`;
   return h;
 }
 function tabTree(){
@@ -1366,6 +1379,8 @@ document.addEventListener('click',ev=>{
     case 'reset2':noSave=true;try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload();break;
     case 'restart':save();location.reload();break;
     case 'speed':S.speed=S.speed===2?1:2;toast(S.speed===2?'Game speed 2×':'Game speed 1×','#3fe0ff');break;
+    case 'planets':if(W)showPlanets();break;
+    case 'setdiff':{const d=+k;S.diff=d;newPlanet(W.gal,W.pl,null,d);closeModal();save();break;}
     case 'close':closeModal();break;
     case 'farm':S.farm=!S.farm;toast(S.farm?'Farm mode: replay this planet when cleared':'Auto: next planet when cleared');break;
     case 'boost':{const now=Date.now();if(now<S.boostCd){toast('Boost recharging');break;}S.boostEnd=Math.min(Math.max(now,S.boostEnd)+5*60e3,now+30*60e3);S.boostCd=now+3*60e3;toast('Scrap x2 boost +5 min','#ffa62b');snd(700,.25,'triangle',.05,2);break;}
@@ -1557,6 +1572,7 @@ function step(now){
 load();resize();recalc();fillMissions();
 if(S.world)loadWorld(S.world);else{const idx=Math.max(1,Math.floor((S.wave-1)/5)+1);newPlanet(Math.floor((idx-1)/5)+1,(idx-1)%5+1);}
 renderPanel();hud();
+setTimeout(()=>{if(W&&recTier()>(W.diff||0))toast(`Too easy? Tap “G${W.gal}·P${W.pl}” to play ${DIFF[recTier()].n} for ×${DIFF[recTier()].rew} rewards`,DIFF[recTier()].col);},2500);
 if(S.hp[0]&&!S.hp[0].w){S.hp[0].w={id:0,rar:0};recalc();renderPanel();}
 if(S.last)offlineGain(Date.now()-S.last);
 else toast('Tap enemies or Hives to focus fire. Buy upgrades below.','#3fe0ff');
