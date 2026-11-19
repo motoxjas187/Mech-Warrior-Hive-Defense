@@ -101,6 +101,31 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .slist{display:flex;flex-direction:column;gap:5px}
 .srow{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#0f1a24;border:1px solid #23394d;border-left:4px solid #2b4459;padding:7px 9px;width:100%}
 .srow .sn{font-size:14px;font-weight:600}
+/* fab shop */
+#fab{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;background:radial-gradient(circle at 50% 0,#2a3644,#141c25 60%);padding:8px 10px;overflow:hidden}
+#fab.on{display:flex}
+.fhead{display:flex;align-items:center;gap:8px}.fhead b{font-size:17px;letter-spacing:2px;color:var(--orange)}.fhead .x{position:static;margin-left:auto;font-size:22px;color:var(--dim)}
+.ftabs{display:flex;gap:4px;overflow-x:auto}.ftab{border:1px solid var(--line);padding:4px 8px;font-size:12px;font-family:'Share Tech Mono',monospace;color:var(--dim)}.ftab.on{background:var(--cyan);color:#06222b}
+.fname{font-size:15px;font-weight:600;margin:6px 2px 2px}
+#gunWrap{position:relative;height:150px;flex:none;margin:2px 0;border:1px solid #2b4459;background:repeating-linear-gradient(0deg,#1c2733 0 10px,#1a2430 10px 20px);border-radius:4px}
+#gunWrap.drop{border-color:var(--orange);box-shadow:inset 0 0 22px rgba(255,166,43,.35)}
+#gunCv{position:absolute;inset:0;width:100%;height:100%}
+.sock{position:absolute;transform:translate(-50%,-50%);font-size:9.5px;padding:2px 5px;border:1.5px dashed #33475a;background:rgba(10,18,26,.82);color:#cfe2f0;border-radius:3px;white-space:nowrap;font-family:'Share Tech Mono',monospace}
+.sock.full{border-style:solid}.sock.ok{border-color:var(--orange)!important;color:var(--orange);box-shadow:0 0 10px var(--orange)}.sock.hot{background:var(--orange);color:#1a1205}
+.fstats{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 8px;font-size:11.5px;margin-top:4px}.fs{display:flex;flex-direction:column;background:#101a24;border:1px solid #20324a;padding:3px 6px}
+.fs span{color:var(--dim);font-size:10px}.fs b{font-family:'Share Tech Mono',monospace;font-weight:400;font-size:13px}.fs i{font-style:normal;font-size:10.5px;font-family:'Share Tech Mono',monospace}
+.fperks{margin:4px 2px;color:#ffd27a}
+.frow{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.frow .btn{padding:6px 9px;font-size:12px}
+.ffilt{display:flex;gap:4px;overflow-x:auto;margin-bottom:6px;flex:none}.fchip{border:1px solid var(--line);padding:4px 8px;font-size:11px;white-space:nowrap;color:var(--dim)}.fchip.on{border-color:var(--orange);color:var(--orange)}
+#fbin{flex:1;overflow-y:auto;align-content:start;min-height:80px;background:#1d2a36;border-radius:4px;padding:6px;
+  background-image:radial-gradient(#0e151c 1.6px,transparent 1.7px);background-size:16px 16px}
+.pgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ptile{position:relative;aspect-ratio:1;border:2px solid;background:linear-gradient(#24323f,#18222c);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;box-shadow:0 3px 0 #0b1016}
+.ptile .pico{width:70%;height:auto}.ptile .pn{font-size:9px;line-height:1;margin-top:2px;color:#d7e3ee;max-width:96%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ptile .rb{position:absolute;left:3px;right:3px;bottom:2px;height:2px;border-radius:2px}
+.ptile.lift{transform:scale(1.12);box-shadow:0 0 14px var(--rc)}.ptile.ghost{position:fixed;width:56px;z-index:50;pointer-events:none;opacity:.92;transform:scale(1.15) rotate(-6deg);box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.ptile.pop{animation:pop .35s ease-out}@keyframes pop{from{transform:scale(.4);opacity:0}}
+.wico canvas{width:52px;height:52px}
 /* tree */
 .node{display:flex;align-items:center;gap:8px;position:relative}
 .node .nm{flex:1;min-width:0}
@@ -176,6 +201,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
     <button data-tab="armory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M17.5 14v7M14 17.5h7"/></svg>ARMORY</button>
     <button data-tab="reboot"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 6 1-4.5 4.3 1 6.2L12 16.6 6.5 19.5l1-6.2L3 9l6-1z"/></svg>REBOOT</button>
   </div>
+  <div id="fab"></div>
   <div id="modal"><div class="mbox" id="mbox"></div></div>
 </div>
 
@@ -308,7 +334,7 @@ const SHOP=[
   {id:'orbital',name:'Orbital Strike',desc:'Ability: beam strike on the densest swarm. 40s cooldown.',cost:()=>40,done:()=>S.abilities.orbital},
   {id:'repair',name:'Field Repair',desc:'Ability: restore 60% hull. 90s cooldown.',cost:()=>25,done:()=>S.abilities.repair},
   {id:'slot',name:'Module Slot',desc:'+1 equipped module slot (max 6).',cost:()=>60+(S.slots-4)*60,done:()=>S.slots>=6},
-  {id:'cache',name:'Weapon Cache',desc:'Choose 1 of 2 random weapons from the 12,000 pool.',cost:()=>30},
+  {id:'cache',name:'Parts Crate',desc:'3 random gun parts (10% chance of a new frame blueprint).',cost:()=>20},
   {id:'crate',name:'Module Crate',desc:'One random module with boosted rarity.',cost:()=>20},
   {id:'warp',name:'Time Warp',desc:'Instantly collect 1 hour of scrap income.',cost:()=>30},
 ];
@@ -325,7 +351,7 @@ const MT=[
 const BUILD='dev';
 const SAVE_KEY='mechsiege_hivewar_v1';
 function newState(){return{money:50,crystals:10,cores:0,prestiges:0,wave:1,maxWaveRun:1,bestWave:1,farm:false,
-  hp:[{lvl:1,w:{id:0,rar:0}},null,null,null,null,null],found:[0],caches:0,stash:[],tree:{},modules:[],equipped:[null,null,null,null],slots:4,nextId:1,
+  hp:[{lvl:1,w:{f:0,p:{}}},null,null,null,null,null],found:[0],caches:0,stash:[],parts:[],frames:[0],pfound:[],tree:{},modules:[],equipped:[null,null,null,null],slots:4,nextId:1,
   abilities:{overdrive:true,orbital:false,repair:false},boostEnd:0,boostCd:0,buyMode:1,missions:[],missionsDone:0,
   stats:{kills:0,brutes:0,hives:0,queens:0,fused:0,earned:0,time:0},sound:true,last:0,avgIncome:0,hull:null,firstTen:0}}
 let S=newState();
@@ -340,7 +366,8 @@ function load(){
       for(const k of ['cannon','laser','missile','tesla','flamer','rail']){if(o.weapons[k]>0){S.hp[i]={lvl:o.weapons[k],w:{id:map[k]*100+Math.floor(Math.random()*100),rar:0}};i++;}}if(!S.hp[0])S.hp[0]={lvl:1,w:null};delete S.weapons;}S.stats=Object.assign(newState().stats,o.stats||{});S.abilities=Object.assign(newState().abilities,o.abilities||{});
     while(S.equipped.length<S.slots)S.equipped.push(null);
     if(!Array.isArray(S.stash))S.stash=[];
-    if(!S.rarFix){S.rarFix=1;const cap=Math.min(5,2+S.prestiges);for(const h of S.hp)if(h&&h.w&&h.w.rar>cap)h.w.rar=cap;}}}catch(e){}
+    if(!S.rarFix){S.rarFix=1;const cap=Math.min(5,2+S.prestiges);for(const h of S.hp)if(h&&h.w&&h.w.rar!=null&&h.w.rar>cap)h.w.rar=cap;}
+    migrateGuns();}}catch(e){}
 }
 let noSave=false;
 function save(){if(noSave)return;worldSave();S.last=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
@@ -358,8 +385,8 @@ function recalc(){
   D.regen=.004*lvl('repair');
   D.taken=Math.max(.4,1-.04*lvl('reactive'));
   let wl=0,tl=0;for(const h of S.hp)if(h)wl+=h.lvl;for(const k in S.tree)tl+=S.tree[k];
-  let gr=0;for(const h of S.hp)if(h&&h.w&&Math.floor(h.w.id/1000)===7)gr++;
-  D.upInc=(1+.01*wl)*(1+.02*tl)*(1+.15*gr);
+  let gr=0;for(const h of S.hp)if(h&&h.w&&h.w.p&&h.w.p.chip&&h.w.p.chip.m===1)gr+=.08*RM[h.w.p.chip.r];
+  D.upInc=(1+.01*wl)*(1+.02*tl)*(1+gr);
   D.scrap=(1+.08*lvl('drones')+.12*lvl('magnet'))*(1+modSum('scavenger')/100)*core*D.upInc;
   D.drones=lvl('drones');
   D.boss=1+.5*lvl('hivebreaker');
@@ -371,24 +398,12 @@ function recalc(){
   while(R.drones.length<Math.min(8,D.drones))R.drones.push({x:MX,y:MY-30,a:Math.random()*TAU,o:null});
   if(R.drones.length>D.drones)R.drones.length=Math.min(8,D.drones);
 }
-function bossThreat(){let t=0,n=0;for(const h of S.hp)if(h&&h.w){t+=WRAR[h.w.rar][2];n++;}const avg=n?t/n:1;return Math.max(1,Math.pow(avg,1.35)*(1+.1*S.prestiges));}
+function bossThreat(){let t=0,n=0;for(const h of S.hp)if(h&&h.w){t+=gunPower(h.w);n++;}const avg=n?t/n:1;return Math.max(1,Math.pow(avg,1.35)*(1+.1*S.prestiges));}
 const hpScale=w=>10*Math.pow(1.2,w-1)*(1+.04*S.prestiges);
 const rewScale=w=>2.5*Math.pow(1.14,w-1);
 const dmgScale=w=>Math.pow(1.09,w-1);
 const waveTotal=w=>Math.min(140,14+w*3)+(w%10===0?1:0);
 const boostOn=()=>Date.now()<S.boostEnd;
-function wStats(i){const h=S.hp[i];if(!h||!h.w)return null;return wStatsW(h.w,i,h.lvl)}
-function wScore(w){return wStatsW(w,0,1).dps}
-function wStatsW(w,i,l){
-  const id=w.id,b=wb(id);
-  const s={kind:b.kind,rate:b.rate,pellets:b.pellets||1,spread:b.spread||0,spd:b.spd||1000,pierce:b.pierce||0,aoe:b.aoe||0,range:b.range||0,chains:b.chains||0,
-    homing:!!b.homing,big:!!b.big,dmgM:b.dmg,crit:0,critMult:0,leech:0,perk:null,bossM:1,echo:0,elM:1,greed:0,thunder:0,odM:1,el:id%5,col:we(id).col,i};
-  wp(id)[2](s);wsx(id)[2](s);
-  s.dmg=HPT[i].dps*l*Math.pow(2,Math.floor(l/25))*WRAR[w.rar][2]*s.dmgM/(b.rate*(b.pellets||1));
-  {const bp=b.pellets||1;if(s.pellets>bp)s.dmg*=(bp+.4*(s.pellets-bp))/s.pellets;}
-  s.dps=s.dmg*s.rate*s.pellets;
-  return s;
-}
 function refreshWeapons(){R.ws=S.hp.map((h,i)=>wStats(i))}
 function wDps(i){const s=R.ws[i];return s?s.dps*D.dmg:0}
 function totalDps(){let t=0;for(let i=0;i<6;i++)t+=wDps(i);return t*D.rate*(1+D.crit*(D.critDmg-1))}
@@ -459,6 +474,302 @@ function buildFloor(){
     g.fillStyle='#3d4853';g.beginPath();g.moveTo(x-r,y);g.lineTo(x-r*.4,y-r*1.4);g.lineTo(x+r*.6,y-r*1.1);g.lineTo(x+r,y);g.lineTo(x,y+r*.5);g.fill();
     g.fillStyle='#55626e';g.beginPath();g.moveTo(x-r*.4,y-r*1.4);g.lineTo(x+r*.6,y-r*1.1);g.lineTo(x+r*.1,y-r*.3);g.fill();}
 }
+
+/* ================= FAB SHOP: modular guns built from parts ================= */
+const SLOTS=['barrel','mag','stock','optic','muzzle','core','chip'];
+const SLOTN={frame:'Frame',barrel:'Barrel',mag:'Magazine',stock:'Stock',optic:'Optic',muzzle:'Muzzle',core:'Core',chip:'Chip'};
+const RM=[1,1.3,1.7,2.2,2.9,3.8];
+const pc=x=>Math.round(x*100)+'%';
+const PARTS={
+  barrel:[
+    {n:'Long Barrel',w:'Long',d:m=>`+${pc(.25*m)} damage, +30% range & velocity`,ap:(s,m)=>{s.dmgM*=1+.25*m;s.spd*=1.3;if(s.range)s.range*=1.3;}},
+    {n:'Heavy Barrel',w:'Heavy',d:m=>`+${pc(.45*m)} damage, −15% fire rate`,ap:(s,m)=>{s.dmgM*=1+.45*m;s.rate*=.85;}},
+    {n:'Twin Barrel',w:'Twin',d:m=>`+${m>=2.2?2:1} projectile (+40% dmg each)`,ap:(s,m)=>{s.pellets+=m>=2.2?2:1;s.spread+=.05;}},
+    {n:'Gatling Barrel',w:'Gatling',d:m=>`+${pc(.3*m)} fire rate`,ap:(s,m)=>{s.rate*=1+.3*m;}},
+    {n:'Rifled Barrel',w:'Rifled',d:m=>`Tight spread, +${pc(.06*m)} crit, +10% damage`,ap:(s,m)=>{s.spread*=.35;s.crit+=.06*m;s.dmgM*=1.1;}},
+    {n:'Sawed-off',w:'Sawed-off',d:m=>`+${pc(.22*m)} fire rate, +${pc(.1*m)} dmg, −30% range`,ap:(s,m)=>{s.rate*=1+.22*m;s.dmgM*=1+.1*m;s.spread+=.12;if(s.range)s.range*=.7;}},
+  ],
+  mag:[
+    {n:'Drum Magazine',w:'Drum',d:m=>`+${pc(.25*m)} fire rate`,ap:(s,m)=>{s.rate*=1+.25*m;}},
+    {n:'Hollow Points',w:'Hollow',d:m=>`+${pc(.3*m)} damage`,ap:(s,m)=>{s.dmgM*=1+.3*m;}},
+    {n:'AP Rounds',w:'Piercing',d:m=>`+${1+Math.floor(m/1.5)} pierce / chain jumps`,ap:(s,m)=>{const k=1+Math.floor(m/1.5);s.pierce+=k;s.chains+=k;s.dmgM*=1.05;}},
+    {n:'Explosive Rounds',w:'Volatile',d:m=>`Hits explode (radius ${Math.round(30*(1+.15*m))})`,ap:(s,m)=>{s.aoe=Math.max(s.aoe,30*(1+.15*m));}},
+    {n:'Cluster Rounds',w:'Cluster',d:m=>`Hits burst into 4 shards (${pc(.3+.05*m)} dmg each)`,ap:(s,m)=>{s.perks.split=.3+.05*m;}},
+    {n:'Overcharged Cells',w:'Overcharged',d:m=>`+${pc(.18*m)} damage, +${pc(.1*m)} fire rate`,ap:(s,m)=>{s.dmgM*=1+.18*m;s.rate*=1+.1*m;}},
+  ],
+  stock:[
+    {n:'Tactical Stock',w:'Tactical',d:m=>`+${pc(.05*m)} crit chance`,ap:(s,m)=>{s.crit+=.05*m;}},
+    {n:'Brutal Stock',w:'Brutal',d:m=>`+${pc(.4*m)} crit damage`,ap:(s,m)=>{s.critMult+=.4*m;}},
+    {n:'Recoil Damper',w:'Steady',d:m=>`+${pc(.15*m)} fire rate`,ap:(s,m)=>{s.rate*=1+.15*m;}},
+    {n:'Heavy Stock',w:'Braced',d:m=>`+${pc(.2*m)} damage`,ap:(s,m)=>{s.dmgM*=1+.2*m;}},
+    {n:'Leech Stock',w:'Vampiric',d:m=>`Hits repair hull (×${m.toFixed(1)}), +5% dmg`,ap:(s,m)=>{s.leech+=m;s.dmgM*=1.05;}},
+  ],
+  optic:[
+    {n:'Red Dot',w:'Dotted',d:m=>`+${pc(.04*m)} crit, +10% damage`,ap:(s,m)=>{s.crit+=.04*m;s.dmgM*=1.1;}},
+    {n:'Long Scope',w:'Scoped',d:m=>`+30% range, +${pc(.25*m)} crit damage, +10% dmg`,ap:(s,m)=>{if(s.range)s.range*=1.3;s.critMult+=.25*m;s.dmgM*=1.1;}},
+    {n:'Smart Scope',w:'Seeking',d:m=>`Projectiles home in, +${pc(.1*m)} damage`,ap:(s,m)=>{s.homing=true;s.dmgM*=1+.1*m;}},
+    {n:'Thermal Sight',w:'Thermal',d:m=>`+${pc(.35*m)} damage to bosses & hives`,ap:(s,m)=>{s.bossM*=1+.35*m;}},
+    {n:'Hunter Optic',w:'Hunter',d:m=>`+${pc(.03*m)} crit, +${pc(.15*m)} crit damage`,ap:(s,m)=>{s.crit+=.03*m;s.critMult+=.15*m;}},
+  ],
+  muzzle:[
+    {n:'Ricochet Muzzle',w:'Ricochet',d:m=>`Shots bounce to ${1+Math.floor(m)} more foes`,ap:(s,m)=>{s.perks.ricochet=1+Math.floor(m);}},
+    {n:'Storm Coil',w:'Storm',d:m=>`Hits arc to 3 foes for ${pc(Math.min(.9,.3+.1*m))} dmg`,ap:(s,m)=>{s.perks.storm=Math.min(.9,.3+.1*m);}},
+    {n:'Nova Compensator',w:'Nova',d:m=>`${pc(.12+.03*m)} chance hits explode`,ap:(s,m)=>{s.perks.nova=.12+.03*m;}},
+    {n:'Echo Chamber',w:'Echo',d:m=>`${pc(Math.min(.6,.1*m))} chance to fire twice`,ap:(s,m)=>{s.echo+=Math.min(.6,.1*m);}},
+    {n:'Thunder Rod',w:'Thunder',d:m=>`${pc(.07*m)} chance hits call lightning`,ap:(s,m)=>{s.thunder+=.07*m;}},
+    {n:'Splitter Brake',w:'Splitter',d:m=>`+2 projectiles, −15% damage`,ap:(s,m)=>{s.pellets+=2;s.spread+=.15;s.dmgM*=.85*(1+.05*m);}},
+  ],
+  core:ELEM.map((e,k)=>({n:e.w+' Core',w:e.w,d:m=>`${e.desc} · strength ${pc(1+.25*(m-1))}`,ap:(s,m)=>{s.el=k;s.col=e.col;s.elM*=1+.25*(m-1);}})),
+  chip:[
+    {n:'Vampire Chip',w:'Leeching',d:m=>`Hits repair hull (×${(m*.8).toFixed(1)})`,ap:(s,m)=>{s.leech+=m*.8;}},
+    {n:'Greed Chip',w:'Greedy',d:m=>`+${pc(.08*m)} scrap income`,ap:(s,m)=>{s.greed+=.08*m;}},
+    {n:'Ruin Chip',w:'Ruinous',d:m=>`+${pc(.4*m)} damage to bosses & hives`,ap:(s,m)=>{s.bossM*=1+.4*m;}},
+    {n:'Overload Chip',w:'Overloaded',d:m=>`×${(1.5+.25*m).toFixed(2)} damage in Overdrive, +10% dmg`,ap:(s,m)=>{s.odM=Math.max(s.odM,1.5+.25*m);s.dmgM*=1.1;}},
+    {n:'Haste Chip',w:'Hasted',d:m=>`+${pc(.12*m)} fire rate`,ap:(s,m)=>{s.rate*=1+.12*m;}},
+    {n:'Titan Chip',w:'Titan',d:m=>`+${pc(.35*m)} damage, −10% fire rate`,ap:(s,m)=>{s.dmgM*=1+.35*m;s.rate*=.9;}},
+  ],
+};
+const BUILDS=BASES.length*SLOTS.reduce((a,sl)=>a*(PARTS[sl].length+1),1);
+const pDef=p=>PARTS[p.s][p.m];
+const newGun=f=>({f,p:{}});
+function gunPower(w){let t=1;for(const sl of SLOTS){const p=w.p[sl];if(p)t+=.12*(RM[p.r]-1);}return t}
+function gunTier(w){let t=0,n=0;for(const sl of SLOTS){const p=w.p[sl];if(p){t+=p.r;n++;}}return n?Math.round(t/n):0}
+function gunName(w){const c=w.p.core,b=w.p.barrel||w.p.mag;return `${c?ELEM[c.m].w+' ':''}${b?pDef(b).w+' ':''}${BASES[w.f].name}`}
+function gunMk(w){return 'Mk '+['I','II','III','IV','V','VI'][gunTier(w)]}
+function gunStats(w,i,l){
+  const b=BASES[w.f];
+  const s={kind:b.kind,rate:b.rate,pellets:b.pellets||1,spread:b.spread||0,spd:b.spd||1000,pierce:b.pierce||0,aoe:b.aoe||0,range:b.range||0,chains:b.chains||0,
+    homing:!!b.homing,big:!!b.big,dmgM:b.dmg,crit:0,critMult:0,leech:0,perks:{},bossM:1,echo:0,elM:1,greed:0,thunder:0,odM:1,el:-1,col:'#ffd27a',i};
+  for(const sl of SLOTS){const p=w.p[sl];if(p)PARTS[sl][p.m].ap(s,RM[p.r]);}
+  s.echo=Math.min(.6,s.echo);s.power=gunPower(w);
+  s.dmg=HPT[i].dps*Math.max(1,l)*Math.pow(2,Math.floor(l/25))*s.power*s.dmgM/(b.rate*(b.pellets||1));
+  {const bp=b.pellets||1;if(s.pellets>bp)s.dmg*=(bp+.4*(s.pellets-bp))/s.pellets;}
+  s.dps=s.dmg*s.rate*s.pellets*(1+s.echo);
+  return s;
+}
+function wStats(i){const h=S.hp[i];if(!h||!h.w)return null;return gunStats(h.w,i,h.lvl)}
+// overall value of a build, counting effects that raw DPS misses
+function gunScore(w,i,l){const s=gunStats(w,i,l);let v=s.dps*(1+Math.min(.75,D.crit+s.crit)*(D.critDmg+s.critMult-1));
+  if(s.aoe)v*=1.3;if(s.pierce)v*=1+.1*Math.min(4,s.pierce);if(s.perks.split)v*=1+s.perks.split*.8;if(s.perks.storm)v*=1+s.perks.storm*.7;if(s.perks.nova)v*=1+s.perks.nova*1.2;if(s.perks.ricochet)v*=1+.1*s.perks.ricochet;
+  if(s.thunder)v*=1+s.thunder*1.2;if(s.el>=0)v*=1.1+.05*s.elM;if(s.homing)v*=1.06;if(s.leech)v*=1+.02*s.leech;if(s.greed)v*=1+s.greed*.6;v*=1+(s.bossM-1)*.25;return v}
+
+/* ---- parts inventory ---- */
+const BIN_MAX=400;
+function rollPart(bonus,slot){const sl=slot||SLOTS[Math.floor(Math.random()*SLOTS.length)];return{u:S.nextId++,s:sl,m:Math.floor(Math.random()*PARTS[sl].length),r:rollWRar(bonus)}}
+function partVal(p){return rewScale(S.wave)*2*Math.pow(p.r+1,2)}
+function addPart(p){S.parts.push(p);const key=p.s+p.m+'_'+p.r;if(!S.pfound.includes(key))S.pfound.push(key);
+  if(S.parts.length>BIN_MAX){S.parts.sort((a,b)=>a.r-b.r);const x=S.parts.shift();S.money+=partVal(x);}}
+const PF_TOTAL=SLOTS.reduce((a,sl)=>a+PARTS[sl].length,0)*6;
+function crateRoll(){const out=[];for(let k=0;k<3;k++)out.push(rollPart(.2));let fr=null;
+  const miss=BASES.map((b,i)=>i).filter(i=>!S.frames.includes(i));if(miss.length&&Math.random()<.1)fr=miss[Math.floor(Math.random()*miss.length)];return{parts:out,frame:fr}}
+function partTile(p,extra){const c=WRAR[p.r][1];return `<button class="ptile ${extra||''}" data-u="${p.u}" style="border-color:${c};--rc:${c}">${slotIcon(p.s,p.s==='core'?ELEM[p.m].col:c)}<span class="pn">${pDef(p).w}</span><i class="rb" style="background:${c}"></i></button>`}
+function openCrates(n){
+  n=Math.min(n,S.caches);if(n<=0)return;S.caches-=n;const got=[];const frames=[];
+  for(let k=0;k<n;k++){const c=crateRoll();for(const p of c.parts){addPart(p);got.push(p);}if(c.frame!=null&&!S.frames.includes(c.frame)){S.frames.push(c.frame);frames.push(c.frame);}}
+  const m=autoMergeParts();const cnt=[0,0,0,0,0,0];for(const p of got)cnt[p.r]++;
+  let h=`<button class="x" data-act="close">✕</button><h2>Opened ${n} Parts Crate${n>1?'s':''}</h2>`;
+  if(frames.length)h+=`<div class="card"><b style="color:#ffa62b">New frame blueprint${frames.length>1?'s':''}:</b> ${frames.map(f=>BASES[f].name).join(', ')}</div>`;
+  if(got.length<=9)h+=`<div class="pgrid" style="margin-bottom:8px">${got.map(p=>partTile(p,'pop')).join('')}</div>`;
+  else h+=cnt.map((c,r)=>c?`<div class="stat"><span style="color:${WRAR[r][1]}">${WRAR[r][0]} parts</span><b>×${c}</b></div>`:'').join('');
+  h+=`<div class="note" style="margin:8px 0">${m?`Auto-merged ${m} times. `:''}Bin: ${S.parts.length} parts.</div><button class="unlock" style="margin:0" data-act="fab">🔧 OPEN FAB SHOP</button>`;
+  openModal(h,'crate');renderPanel();snd(700,.3,'triangle',.05,1.8);
+}
+// three identical parts (same model + rarity) fuse into one of the next rarity
+function autoMergeParts(){let n=0;const cap=mergeCap();let again=true;
+  while(again){again=false;const g={};for(const p of S.parts){if(p.r>=cap)continue;const k=p.s+'|'+p.m+'|'+p.r;(g[k]=g[k]||[]).push(p);}
+    for(const k in g){const L=g[k];while(L.length>=3){const used=L.splice(0,3);S.parts=S.parts.filter(p=>!used.includes(p));addPart({u:S.nextId++,s:used[0].s,m:used[0].m,r:used[0].r+1});n++;again=true;}}}
+  S.stats.fused+=n;return n}
+function mergePart(u){const p=S.parts.find(x=>x.u===u);if(!p||p.r>=mergeCap())return false;const f=S.parts.filter(x=>x!==p&&x.s===p.s&&x.m===p.m&&x.r===p.r).slice(0,2);if(f.length<2)return false;
+  S.parts=S.parts.filter(x=>!f.includes(x));p.r++;S.stats.fused++;const key=p.s+p.m+'_'+p.r;if(!S.pfound.includes(key))S.pfound.push(key);return true}
+function installPart(i,u){const h=S.hp[i];if(!h||!h.w)return;const p=S.parts.find(x=>x.u===u);if(!p)return;
+  S.parts=S.parts.filter(x=>x!==p);const old=h.w.p[p.s];if(old)S.parts.push(old);h.w.p[p.s]=p;recalc();}
+function removePart(i,sl){const h=S.hp[i];if(!h||!h.w||!h.w.p[sl])return;S.parts.push(h.w.p[sl]);delete h.w.p[sl];recalc();}
+function autoBuild(i){
+  const h=S.hp[i];if(!h||!h.w)return 0;const w=h.w;let changed=0;
+  for(const sl of SLOTS)if(w.p[sl]){S.parts.push(w.p[sl]);delete w.p[sl];}
+  for(let pass=0;pass<2;pass++)for(const sl of SLOTS){
+    const cur=w.p[sl];let best=cur,bv=gunScore(w,i,h.lvl);
+    for(const p of S.parts){if(p.s!==sl)continue;w.p[sl]=p;const v=gunScore(w,i,h.lvl);if(v>bv*1.0001){bv=v;best=p;}}
+    if(cur)w.p[sl]=cur;else delete w.p[sl];
+    if(best&&best!==cur){if(cur)S.parts.push(cur);S.parts=S.parts.filter(x=>x!==best);w.p[sl]=best;changed++;}}
+  recalc();return changed;
+}
+function partFromOld(slot,model,r){return{u:S.nextId++,s:slot,m:model,r}}
+// convert the old 12,000-weapon guns/stash into frames + parts
+const PRE_MAP=[['barrel',3],['barrel',1],['mag',2],['barrel',2],['mag',3],['chip',0],['stock',0],['barrel',0],['mag',0],['muzzle',5],['barrel',4],['stock',1],['mag',1],['chip',5],['mag',5],['optic',2],['muzzle',0],['mag',4],['muzzle',1],['muzzle',2]];
+const SUF_MAP=[null,['chip',4],['chip',2],['mag',2],['muzzle',3],['stock',3],['chip',5],['chip',1],['optic',0],['mag',3],['muzzle',4],['chip',3]];
+function disassemble(old){const f=Math.floor(old.id%1000/100),pr=PRE_MAP[Math.floor(old.id%100/5)],sx=SUF_MAP[Math.floor(old.id/1000)];const parts=[partFromOld('core',old.id%5,old.rar),partFromOld(pr[0],pr[1],old.rar)];if(sx)parts.push(partFromOld(sx[0],sx[1],old.rar));return{f,parts}}
+function migrateGuns(){
+  if(!Array.isArray(S.parts))S.parts=[];if(!Array.isArray(S.frames))S.frames=[0];if(!Array.isArray(S.pfound))S.pfound=[];
+  for(const h of S.hp){if(!h||!h.w||h.w.id==null)continue;const d=disassemble(h.w);if(!S.frames.includes(d.f))S.frames.push(d.f);const g=newGun(d.f);
+    for(const p of d.parts){if(!g.p[p.s])g.p[p.s]=p;else addPart(p);}h.w=g;}
+  if(Array.isArray(S.stash)&&S.stash.length){for(const w of S.stash){const d=disassemble(w);if(!S.frames.includes(d.f))S.frames.push(d.f);for(const p of d.parts)addPart(p);}S.stash=[];setTimeout(()=>toast('Your weapons were taken apart into Fab Shop parts','#ffa62b'),1500);}
+}
+
+/* ---- hardpoint unlock: pick 1 of 2 frames ---- */
+function frameDraft(i){
+  const pool=BASES.map((b,k)=>k);const pick=[];const pref=pool.filter(k=>!S.frames.includes(k));
+  while(pick.length<2){const src=(pref.length&&Math.random()<.7)?pref:pool;const k=src[Math.floor(Math.random()*src.length)];if(!pick.includes(k))pick.push(k);}
+  R.paused=true;R.draft={mode:'frame',slot:i,opts:pick};
+  openModal(`<h2>Hardpoint ${i+1} online</h2><div class="note" style="margin-bottom:8px">Choose a frame. You can fit parts on it in the Fab Shop.</div><div class="dgrid">${pick.map(f=>{const b=BASES[f];const st=gunStats(newGun(f),i,S.hp[i].lvl);
+    return `<div class="dcard" style="border-color:#3fe0ff"><canvas class="fcv" data-f="${f}" width="300" height="130"></canvas><div class="wname" style="white-space:normal">${b.name}</div>${S.frames.includes(f)?'<span class="wtag">owned</span>':'<span class="newb">NEW</span>'}<div class="wl">${b.desc}</div><div class="wl stats">DPS ${fmt(st.dps*D.dmg*D.rate)}<br>Rate ${st.rate.toFixed(1)}/s${st.pellets>1?' · '+st.pellets+' proj':''}</div><button class="unlock" style="margin:8px 0 0;padding:10px;font-size:15px" data-act="pickframe" data-k="${f}">TAKE</button></div>`}).join('')}</div>`,'draft');
+  for(const c of document.querySelectorAll('.fcv'))drawGunArt(c,newGun(+c.dataset.f));
+}
+
+/* ---- gun art (side view, chunky toy-like style) ---- */
+function slotIcon(sl,c){const k={
+  barrel:`<rect x="3" y="10" width="26" height="6" rx="1" fill="${c}"/><rect x="3" y="9" width="5" height="8" fill="#1b2530"/>`,
+  mag:`<rect x="10" y="4" width="12" height="22" rx="2" fill="${c}"/><rect x="10" y="20" width="12" height="3" fill="#1b2530"/>`,
+  stock:`<path d="M3 9h22v6l-6 9H9l-6-6z" fill="${c}"/><rect x="11" y="13" width="7" height="5" fill="#1b2530"/>`,
+  optic:`<rect x="5" y="9" width="22" height="8" rx="4" fill="${c}"/><circle cx="26" cy="13" r="4" fill="#1b2530"/><rect x="12" y="17" width="6" height="5" fill="${c}"/>`,
+  muzzle:`<path d="M4 9h12l10-5v18l-10-5H4z" fill="${c}"/>`,
+  core:`<circle cx="16" cy="15" r="9" fill="${c}"/><circle cx="16" cy="15" r="4" fill="#fff" opacity=".8"/>`,
+  chip:`<rect x="8" y="7" width="16" height="16" rx="2" fill="${c}"/><g stroke="${c}" stroke-width="2"><path d="M11 3v4M16 3v4M21 3v4M11 23v4M16 23v4M21 23v4"/></g><rect x="12" y="11" width="8" height="8" fill="#1b2530"/>`,
+  frame:`<path d="M4 9h18l4 4v5H14l-3 8H6l2-8H4z" fill="${c}"/>`}[sl];return `<svg viewBox="0 0 32 30" class="pico">${k}</svg>`}
+function drawGunArt(cv,w){
+  const g=cv.getContext('2d'),Wd=cv.width,Hd=cv.height;g.clearRect(0,0,Wd,Hd);
+  const sc2=Math.min(Wd/340,Hd/150);g.save();g.translate(Wd/2-170*sc2,Hd/2-75*sc2);g.scale(sc2,sc2);
+  const OL='#16202a',BODY='#5d7f97',BODY2='#3f5a6e',Y='#f2c200',DARK='#2a3640';
+  const rc=sl=>{const p=w.p[sl];return p?WRAR[p.r][1]:null};
+  const rr=(x,y,ww,hh,r,f,stroke)=>{g.beginPath();g.roundRect?g.roundRect(x,y,ww,hh,r):g.rect(x,y,ww,hh);g.fillStyle=f;g.fill();g.lineWidth=3;g.strokeStyle=stroke||OL;g.stroke();};
+  const kind=BASES[w.f].kind,P=w.p;
+  // stock
+  if(P.stock){const m=P.stock.m;const c=rc('stock');
+    if(m===2){rr(22,62,62,14,4,BODY2,c);g.strokeStyle=Y;g.lineWidth=3;g.beginPath();for(let x=30;x<80;x+=8){g.moveTo(x,64);g.lineTo(x+4,74);}g.stroke();rr(14,56,14,30,4,DARK,c);}
+    else if(m===3)rr(16,56,72,32,6,BODY2,c);
+    else{rr(20,58,66,18,5,BODY,c);rr(14,58,16,34,4,m===1?'#9c2f2f':DARK,c);if(m===0){g.fillStyle=OL;g.fillRect(40,64,30,6);}if(m===4){g.strokeStyle='#ff3d5a';g.lineWidth=3;g.beginPath();g.moveTo(26,66);g.quadraticCurveTo(50,96,84,72);g.stroke();}if(m===1){g.fillStyle='#ddd';for(let k=0;k<3;k++){g.beginPath();g.moveTo(14,62+k*10);g.lineTo(6,66+k*10);g.lineTo(14,70+k*10);g.fill();}}}}
+  else{g.fillStyle=DARK;g.fillRect(70,64,18,10);}
+  // barrel
+  const bx=226;let bEnd=bx+34;
+  const barrel=(y,len,th,col)=>{rr(bx,y-th/2,len,th,2,col||'#8b98a5',rc('barrel'));};
+  if(kind==='beam'||kind==='chain'||kind==='cone'||kind==='mortar'||kind==='missile'){} // these frames show their own emitter
+  if(P.barrel){const m=P.barrel.m;
+    if(m===0){barrel(64,96,10);bEnd=bx+96;}
+    else if(m===1){barrel(64,68,20,'#6c7884');bEnd=bx+68;}
+    else if(m===2){barrel(56,74,9);barrel(72,74,9);bEnd=bx+74;}
+    else if(m===3){barrel(55,70,7);barrel(64,70,7,'#c0ccd6');barrel(73,70,7);rr(bx+40,50,10,28,3,Y);bEnd=bx+70;}
+    else if(m===4){barrel(64,84,12);g.strokeStyle=OL;g.lineWidth=1.5;for(let x=bx+10;x<bx+80;x+=10){g.beginPath();g.moveTo(x,59);g.lineTo(x,69);g.stroke();}bEnd=bx+84;}
+    else{barrel(64,40,18,'#7b8692');bEnd=bx+40;}}
+  else barrel(64,34,9);
+  // muzzle
+  if(P.muzzle){const m=P.muzzle.m,c=rc('muzzle');const mx=bEnd,my=64;
+    if(m===0){rr(mx,my-8,10,16,2,DARK,c);g.strokeStyle=Y;g.lineWidth=3;g.beginPath();g.moveTo(mx+10,my-8);g.lineTo(mx+20,my-14);g.moveTo(mx+10,my+8);g.lineTo(mx+20,my+14);g.stroke();}
+    else if(m===1){for(let k=0;k<3;k++){g.strokeStyle=k%2?'#3fe0ff':c;g.lineWidth=3;g.beginPath();g.ellipse(mx+5+k*7,my,4,11,0,0,TAU);g.stroke();}}
+    else if(m===2){rr(mx,my-11,18,22,8,'#d06a1a',c);g.fillStyle=OL;g.fillRect(mx+5,my-3,8,6);}
+    else if(m===3){rr(mx,my-10,20,20,3,BODY2,c);g.fillStyle='#3fe0ff';g.fillRect(mx+4,my-2,12,4);}
+    else if(m===4){rr(mx,my-5,22,10,2,DARK,c);g.strokeStyle='#e6f6ff';g.lineWidth=2;g.beginPath();g.moveTo(mx+8,my-5);g.lineTo(mx+12,my-14);g.moveTo(mx+16,my-5);g.lineTo(mx+20,my-14);g.stroke();}
+    else{rr(mx,my-6,8,12,2,DARK,c);rr(mx+8,my-14,14,8,2,Y,c);rr(mx+8,my+6,14,8,2,Y,c);}}
+  // body by frame kind
+  rr(84,44,146,44,8,BODY);g.fillStyle=Y;g.fillRect(96,44,40,6);g.fillStyle=BODY2;g.fillRect(150,52,66,24);
+  if(kind==='bullet'&&BASES[w.f].id==='minigun'){rr(196,46,26,36,6,DARK);}
+  if(kind==='missile'){rr(170,30,60,30,6,DARK);g.fillStyle=Y;for(let k=0;k<3;k++){g.beginPath();g.arc(184+k*16,45,5,0,TAU);g.fill();}}
+  if(kind==='beam'){rr(206,52,30,22,10,'#2b3a48');g.fillStyle='#ff4d6d';g.beginPath();g.arc(232,63,6,0,TAU);g.fill();}
+  if(kind==='chain'){for(let k=0;k<3;k++){g.strokeStyle='#7fd8ff';g.lineWidth=3;g.beginPath();g.ellipse(170,34-k*7,16-k*4,5,0,0,TAU);g.stroke();}}
+  if(kind==='cone'){rr(110,88,90,18,9,'#a0461a');}
+  if(kind==='rail'){g.fillStyle='#b77bff';g.fillRect(150,48,110,4);g.fillRect(150,76,110,4);}
+  if(kind==='mortar'){rr(190,36,40,26,6,DARK);}
+  // grip
+  g.beginPath();g.moveTo(120,86);g.lineTo(150,86);g.lineTo(140,122);g.lineTo(112,122);g.closePath();g.fillStyle=DARK;g.fill();g.lineWidth=3;g.strokeStyle=OL;g.stroke();
+  // magazine
+  if(P.mag){const m=P.mag.m,c=rc('mag');
+    if(m===0){g.beginPath();g.arc(184,104,20,0,TAU);g.fillStyle=Y;g.fill();g.lineWidth=3;g.strokeStyle=c;g.stroke();g.fillStyle=OL;g.beginPath();g.arc(184,104,7,0,TAU);g.fill();}
+    else if(m===5){rr(170,86,26,34,4,'#2b3a48',c);g.fillStyle='#3fe0ff';g.fillRect(176,92,14,20);}
+    else if(m===4){for(let k=0;k<3;k++){g.beginPath();g.arc(172+k*12,102+(k%2)*8,8,0,TAU);g.fillStyle='#d06a1a';g.fill();g.lineWidth=2;g.strokeStyle=c;g.stroke();}}
+    else{rr(170,86,24,40,3,m===3?'#9c2f2f':m===2?'#3f5a6e':Y,c);if(m===2){g.fillStyle=Y;g.fillRect(170,104,24,5);}if(m===3){g.fillStyle=Y;g.fillRect(174,94,16,4);g.fillRect(174,108,16,4);}}}
+  // optic
+  if(P.optic){const m=P.optic.m,c=rc('optic');
+    if(m===1){rr(110,22,100,16,8,DARK,c);g.fillStyle='#7fd8ff';g.beginPath();g.arc(206,30,6,0,TAU);g.fill();}
+    else if(m===2){rr(140,20,44,22,4,'#2b3a48',c);g.fillStyle='#3fe0ff';g.fillRect(146,25,32,12);}
+    else if(m===3){rr(130,24,60,16,8,DARK,c);g.fillStyle='#ff8a3a';g.beginPath();g.arc(186,32,6,0,TAU);g.fill();}
+    else if(m===4){rr(120,24,32,16,8,DARK,c);rr(160,24,32,16,8,DARK,c);}
+    else{rr(150,26,28,16,4,DARK,c);g.fillStyle='#ff3d3d';g.beginPath();g.arc(170,34,3,0,TAU);g.fill();}
+    g.fillStyle=OL;g.fillRect(150,40,24,5);}
+  // core window
+  const cc=P.core?ELEM[P.core.m].col:'#22303c';g.beginPath();g.arc(118,66,13,0,TAU);g.fillStyle=OL;g.fill();
+  g.beginPath();g.arc(118,66,9,0,TAU);g.fillStyle=cc;g.fill();if(P.core){g.globalAlpha=.35;g.beginPath();g.arc(118,66,16,0,TAU);g.fill();g.globalAlpha=1;}
+  // chip LED
+  if(P.chip){rr(96,74,14,10,2,'#1b2530',rc('chip'));g.fillStyle=['#ff3d5a','#ffd84d','#c35bff','#3fe0ff','#5dff9b','#ffa62b'][P.chip.m];g.fillRect(100,77,6,4);}
+  g.restore();
+}
+
+/* ---- Fab Shop screen ---- */
+let fabI=0,fabFilter='all',fabPrev=null;
+function openFab(i){if(i!=null)fabI=i;if(!S.hp[fabI]||!S.hp[fabI].w)fabI=S.hp.findIndex(h=>h&&h.w);if(fabI<0)return;$('#fab').classList.add('on');R.fabOpen=true;renderFab();}
+function closeFab(){$('#fab').classList.remove('on');R.fabOpen=false;renderPanel();}
+function statRow(lbl,a,b,fmtf,better){const f=fmtf||(v=>v);let d='';if(b!=null&&Math.abs(b-a)>1e-9){const up=better==='low'?b<a:b>a;d=`<i style="color:${up?'#5dff9b':'#ff4d5e'}">${up?'▲':'▼'} ${f(b)}</i>`;}return `<div class="fs"><span>${lbl}</span><b>${f(a)}</b>${d}</div>`}
+function fabStatsHtml(w,i,prev){
+  const h=S.hp[i],s=gunStats(w,i,h.lvl),p=prev?gunStats(prev,i,h.lvl):null,M=D.dmg*D.rate;const V=(k)=>p?p[k]:null;
+  const per=[];if(s.perks.split)per.push('Cluster');if(s.perks.storm)per.push('Storm');if(s.perks.nova)per.push('Nova');if(s.perks.ricochet)per.push('Ricochet ×'+s.perks.ricochet);if(s.echo)per.push('Echo '+pc(s.echo));if(s.thunder)per.push('Thunder');if(s.homing)per.push('Homing');if(s.leech)per.push('Leech');if(s.greed)per.push('Greed +'+pc(s.greed));if(s.bossM>1)per.push('Boss ×'+s.bossM.toFixed(2));
+  return `<div class="fstats">${statRow('DPS',s.dps*M,p&&p.dps*M,fmt)}${statRow('Damage',s.dmg*D.dmg,p&&p.dmg*D.dmg,fmt)}${statRow('Rate /s',s.rate,V('rate'),v=>v.toFixed(2))}${statRow('Projectiles',s.pellets,V('pellets'))}
+  ${statRow('Pierce',s.pierce,V('pierce'))}${statRow('Blast',Math.round(s.aoe),p&&Math.round(p.aoe))}${statRow('Crit',Math.min(.75,D.crit+s.crit),p&&Math.min(.75,D.crit+p.crit),pc)}${statRow('Crit dmg',D.critDmg+s.critMult,p&&D.critDmg+p.critMult,v=>'×'+v.toFixed(2))}
+  ${statRow('Power',s.power,V('power'),v=>'×'+v.toFixed(2))}<div class="fs"><span>Element</span><b style="color:${s.col}">${s.el>=0?ELEM[s.el].w:'—'}</b></div></div><div class="note fperks">${per.join(' · ')||'No special effects yet — fit a Muzzle, Mag or Chip.'}</div>`
+}
+const SOCK={stock:[6,54],chip:[18,8],optic:[50,4],core:[30,52],frame:[50,58],barrel:[76,52],muzzle:[93,30],mag:[57,88]};
+function renderFab(){
+  const i=fabI,h=S.hp[i],w=h.w;const el=$('#fab');
+  let tabs='';for(let k=0;k<6;k++){const hk=S.hp[k];if(!hk||!hk.w)continue;tabs+=`<button class="ftab ${k===i?'on':''}" data-act="fabhp" data-k="${k}">HP${k+1}</button>`;}
+  let socks='';for(const sl in SOCK){const [x,y]=SOCK[sl];const p=sl==='frame'?null:w.p[sl];const c=p?WRAR[p.r][1]:'#33475a';
+    socks+=`<button class="sock ${p||sl==='frame'?'full':''}" data-sock="${sl}" style="left:${x}%;top:${y}%;border-color:${sl==='frame'?'#3fe0ff':c}">${sl==='frame'?BASES[w.f].name:p?pDef(p).w:'+ '+SLOTN[sl]}</button>`;}
+  const bin=S.parts.filter(p=>fabFilter==='all'||p.s===fabFilter).sort((a,b)=>b.r-a.r||a.s.localeCompare(b.s)||a.m-b.m);
+  const filt=['all',...SLOTS].map(f=>`<button class="fchip ${fabFilter===f?'on':''}" data-act="fabfilter" data-k="${f}">${f==='all'?'All '+S.parts.length:SLOTN[f]}</button>`).join('');
+  el.innerHTML=`<div class="fhead"><b>FAB SHOP</b><div class="ftabs">${tabs}</div><button class="x" data-act="fabclose">✕</button></div>
+  <div class="fname"><span style="color:${WRAR[gunTier(w)][1]}">${gunName(w)}</span> <span class="wtag">${gunMk(w)} · Hardpoint ${i+1} · Lv ${h.lvl}</span></div>
+  <div id="gunWrap"><canvas id="gunCv" width="680" height="300"></canvas>${socks}</div>
+  <div id="fabStats">${fabStatsHtml(w,i,fabPrev)}</div>
+  <div class="frow"><button class="btn o" data-act="fabauto">⚡ Auto-build</button><button class="btn" data-act="fabmerge">⚙ Merge 3→1</button><button class="btn" data-act="fabscrap">♻ Scrap commons</button>${S.caches?`<button class="btn o" data-act="crates">▣ Crates ×${S.caches}</button>`:''}</div>
+  <div class="ffilt">${filt}</div>
+  <div class="note" style="margin:0 2px 6px">Hold a part, then drag it onto the gun. Tap for details. ${fmt(BUILDS)} builds possible · parts found ${S.pfound.length}/${PF_TOTAL}</div>
+  <div id="fbin" class="pgrid">${bin.map(p=>partTile(p)).join('')||'<div class="note">No parts here yet. Parts Crates drop from Queens, Hives, Guardians and the Shop.</div>'}</div>`;
+  drawGunArt($('#gunCv'),w);
+}
+function fabRefresh(){const st=$('#fbin')?$('#fbin').scrollTop:0;renderFab();if($('#fbin'))$('#fbin').scrollTop=st;}
+function showPartSheet(u,fromSock){
+  const i=fabI,h=S.hp[i];let p=S.parts.find(x=>x.u===u);let installed=false;
+  if(!p&&fromSock){p=h.w.p[fromSock];installed=true;}if(!p)return;
+  const c=WRAR[p.r][1],def=pDef(p);
+  let prev=null;if(!installed){prev={f:h.w.f,p:Object.assign({},h.w.p)};prev.p[p.s]=p;}
+  else{prev={f:h.w.f,p:Object.assign({},h.w.p)};delete prev.p[p.s];}
+  const same=S.parts.filter(x=>x!==p&&x.s===p.s&&x.m===p.m&&x.r===p.r).length;const canM=!installed&&p.r<mergeCap()&&same>=2;
+  openModal(`<button class="x" data-act="close">✕</button><div class="row" style="gap:10px"><div class="dico" style="margin:0;border-color:${c}">${slotIcon(p.s,p.s==='core'?ELEM[p.m].col:c)}</div><div><div class="wname" style="color:${c};white-space:normal">${def.n}</div><div class="wtag">${WRAR[p.r][0]} ${SLOTN[p.s]}</div></div></div>
+    <div class="wl" style="font-size:13px;margin:8px 0">${def.d(RM[p.r])}</div>
+    <div class="h" style="margin:8px 0 4px">${installed?'If removed':'If installed on HP'+(i+1)}</div>${fabStatsHtml(h.w,i,prev)}
+    <div class="frow" style="margin-top:10px">${installed?`<button class="btn o" data-act="premove" data-k="${p.s}">Remove</button>`:`<button class="unlock" style="margin:0;padding:10px;font-size:15px;flex:1" data-act="pinstall" data-k="${p.u}">INSTALL</button>`}
+    ${installed?'':`<button class="btn ${canM?'':'dis'}" data-act="pmerge" data-k="${p.u}">⚙ Merge → ${p.r<5?WRAR[p.r+1][0]:'MAX'} (${same}/2)</button><button class="btn o" data-act="pscrap" data-k="${p.u}">♻ $${fmt(partVal(p))}</button>`}</div>`,'part');
+}
+function frameSheet(){
+  const i=fabI,h=S.hp[i];let s=`<button class="x" data-act="close">✕</button><h2>Frames</h2><div class="note" style="margin-bottom:8px">The frame sets how the gun fires. Your parts stay fitted when you switch. Find new frame blueprints in Parts Crates.</div>`;
+  for(const f of BASES.map((b,k)=>k)){const own=S.frames.includes(f);const g2={f,p:h.w.p};const st=gunStats(g2,i,h.lvl);
+    s+=`<div class="card wcard" style="${own?'':'opacity:.45'}"><canvas class="fcv" data-f="${f}" width="200" height="88" style="width:100px;height:44px"></canvas><div class="wmid"><div class="wname" style="font-size:14px">${BASES[f].name}${f===h.w.f?' <span class="wtag">· fitted</span>':''}</div><div class="wtag">${own?BASES[f].desc+' · DPS '+fmt(st.dps*D.dmg*D.rate):'Blueprint not found yet'}</div></div>${own&&f!==h.w.f?`<button class="buy" data-act="setframe" data-k="${f}"><small>SWITCH</small><b>FIT</b></button>`:''}</div>`;}
+  openModal(s,'frames');for(const c of document.querySelectorAll('.fcv'))drawGunArt(c,{f:+c.dataset.f,p:h.w.p});
+}
+// drag & drop: hold a part ~0.18s (or swipe sideways) to pick it up; vertical swipes scroll the bin
+let drag=null;
+function dragEnd(){if(!drag)return;clearTimeout(drag.timer);drag.el.classList.remove('lift');if(drag.ghost)drag.ghost.remove();for(const s of document.querySelectorAll('.sock.hot,.sock.ok'))s.classList.remove('hot','ok');$('#gunWrap')&&$('#gunWrap').classList.remove('drop');drag=null;}
+document.addEventListener('pointerdown',e=>{
+  const t=e.target.closest('#fbin .ptile');if(!t)return;
+  drag={u:+t.dataset.u,x:e.clientX,y:e.clientY,ly:e.clientY,el:t,armed:false,mode:null};
+  drag.timer=setTimeout(()=>{if(drag&&!drag.mode){drag.armed=true;t.classList.add('lift');try{navigator.vibrate&&navigator.vibrate(12)}catch(_){}}},180);
+  try{t.setPointerCapture(e.pointerId)}catch(_){}
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y,dist=Math.hypot(dx,dy);
+  if(!drag.mode){if(drag.armed&&dist>4)drag.mode='drag';else if(!drag.armed&&dist>8)drag.mode=Math.abs(dx)>Math.abs(dy)*1.3?'drag':'scroll';
+    if(drag.mode==='drag'){clearTimeout(drag.timer);const p=S.parts.find(x=>x.u===drag.u);if(!p){dragEnd();return;}drag.p=p;const gh=drag.el.cloneNode(true);gh.className='ptile ghost';document.body.appendChild(gh);drag.ghost=gh;
+      for(const s of document.querySelectorAll('.sock'))if(s.dataset.sock===p.s)s.classList.add('ok');$('#gunWrap').classList.add('drop');}}
+  if(drag.mode==='scroll'){const b=$('#fbin');if(b)b.scrollTop-=e.clientY-drag.ly;drag.ly=e.clientY;return;}
+  if(drag.mode==='drag'){drag.ghost.style.left=(e.clientX-28)+'px';drag.ghost.style.top=(e.clientY-34)+'px';
+    const under=document.elementFromPoint(e.clientX,e.clientY);const over=under&&(under.closest('#gunWrap'));
+    const hot=!!over;for(const s of document.querySelectorAll('.sock.ok'))s.classList.toggle('hot',hot);
+    const want=hot?drag.u:null;if(want!==drag.prevU){drag.prevU=want;const h=S.hp[fabI];if(hot){fabPrev={f:h.w.f,p:Object.assign({},h.w.p)};fabPrev.p[drag.p.s]=drag.p;}else fabPrev=null;$('#fabStats').innerHTML=fabStatsHtml(h.w,fabI,fabPrev);}}
+});
+document.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;
+  if(d.mode==='drag'){const under=document.elementFromPoint(e.clientX,e.clientY);if(under&&under.closest('#gunWrap')){installPart(fabI,d.u);snd(500,.12,'square',.04,1.6);toast(pDef(d.p).n+' fitted','#5dff9b');}
+    fabPrev=null;dragEnd();fabRefresh();return;}
+  if(!d.mode){dragEnd();showPartSheet(d.u);return;}
+  dragEnd();
+});
+document.addEventListener('pointercancel',()=>{if(drag){fabPrev=null;dragEnd();}});
 
 /* ================= WORLD (dig-and-fight planets) ================= */
 const T=30,INF=1e9;
@@ -851,14 +1162,14 @@ function strike(t,s,dmg,crit,o){
   if(o.sec)return;
   applyEl(t,s,dmg,o.cont);
   const pc=o.cont?.3:1;
-  if(s.perk==='storm'&&Math.random()<pc){const ns=nearestN(t.x,t.y,3,120,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(e=>[e.x,e.y])],life:.12,col:s.col});for(const e of ns)hit(e,dmg*.5,false,{sec:true,cont:o.cont});}}
-  if(s.perk==='nova'&&Math.random()<.18*pc){boom(t.x,t.y,.6,s.col);for(const e of [...R.en,...R.hives])if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<60+e.r)hit(e,dmg*.6,false,{sec:true});}
-  if(s.perk==='split'&&!o.cont&&!o.shard){for(let k=0;k<4;k++){const a=k*TAU/4+Math.random();R.pr.push({k:'b',x:t.x,y:t.y,vx:Math.cos(a)*600,vy:Math.sin(a)*600,dmg:dmg*.4,crit:false,pierce:0,hits:new Set([t]),life:.25,s,shard:true,w:1});}}
+  if(s.perks.storm&&Math.random()<pc){const ns=nearestN(t.x,t.y,3,120,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(e=>[e.x,e.y])],life:.12,col:s.col});for(const e of ns)hit(e,dmg*s.perks.storm,false,{sec:true,cont:o.cont});}}
+  if(s.perks.nova&&Math.random()<s.perks.nova*pc){boom(t.x,t.y,.6,s.col);for(const e of [...R.en,...R.hives])if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<60+e.r)hit(e,dmg*.6,false,{sec:true});}
+  if(s.perks.split&&!o.cont&&!o.shard){for(let k=0;k<4;k++){const a=k*TAU/4+Math.random();R.pr.push({k:'b',x:t.x,y:t.y,vx:Math.cos(a)*600,vy:Math.sin(a)*600,dmg:dmg*s.perks.split,crit:false,pierce:0,hits:new Set([t]),life:.25,s,shard:true,w:1});}}
   if(s.thunder&&!o.cont&&Math.random()<s.thunder){R.beams.push({x1:t.x,y1:t.y-320,x2:t.x,y2:t.y,life:.2,max:.2,col:'#e6f6ff',w:4});for(const e of [...R.en,...R.hives])if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<55+e.r)hit(e,dmg*1.5,false,{sec:true});}
-  if(s.leech&&R.leechT<=0){S.hull=Math.min(D.hull,S.hull+D.hull*.004);R.leechT=.08;}
+  if(s.leech&&R.leechT<=0){S.hull=Math.min(D.hull,S.hull+D.hull*.002*s.leech);R.leechT=.08;}
 }
 function applyEl(t,s,dmg,cont){
-  if(t.dead||t.isBlock)return;const e=ELEM[s.el].id;const m=s.elM;
+  if(t.dead||t.isBlock||s.el<0)return;const e=ELEM[s.el].id;const m=s.elM;
   if(e==='fire'){t.burn=3;t.burnD=Math.max(t.burnD||0,dmg*.35*m*(cont?.3:1));}
   else if(e==='ice'){t.slow=2*m;}
   else if(e==='shock'){if(Math.random()<(cont?.08:.3)*m){const ns=nearestN(t.x,t.y,2,110,new Set([t]));if(ns.length){R.arcs.push({pts:[[t.x,t.y],...ns.map(x=>[x.x,x.y])],life:.1,col:'#b48cff'});for(const x of ns)hit(x,dmg*.5,false,{sec:true});}}}
@@ -871,7 +1182,7 @@ function fireW(s){
     const t=s.big?(R.focus&&!R.focus.dead?R.focus:threat()||toughest()||getTarget()):getTarget(s.range||0);if(!t)return false;
     const lt=Math.hypot(t.x-x,t.y-y)/s.spd;const a0=Math.atan2(t.y+(t.vy||0)*lt-y,t.x+(t.vx||0)*lt-x);
     for(let k=0;k<s.pellets;k++){const off=s.pellets>1?(k/(s.pellets-1)-.5)*s.spread*2:0;const a=a0+off+rnd(-s.spread,s.spread)*.5;const [c,m]=rollHit(s);
-      R.pr.push({k:'b',x,y,vx:Math.cos(a)*s.spd,vy:Math.sin(a)*s.spd,t,dmg:s.dmg*m,crit:c,pierce:s.pierce,hits:new Set(),life:(s.range||700)/s.spd,s,bounce:s.perk==='ricochet'?s.pierce+2:0,w:s.big?3:1.6});}
+      R.pr.push({k:'b',x,y,vx:Math.cos(a)*s.spd,vy:Math.sin(a)*s.spd,t,dmg:s.dmg*m,crit:c,pierce:s.pierce,hits:new Set(),life:(s.range||700)/s.spd,s,bounce:s.perks.ricochet?s.pierce+s.perks.ricochet:0,w:s.big?3:1.6});}
     R.parts.push({x,y,vx:0,vy:0,life:.05,max:.05,col:'#fff6c0',size:s.big?12:7,type:'flash'});
     if(Math.random()<.3)snd(s.big?220:rnd(700,900),s.big?.15:.04,'square',.012);return true;}
   if(s.kind==='missile'){const t0=getTarget();if(!t0)return false;
@@ -1341,21 +1652,22 @@ function renderPanel(){
   const p=$('#panel'),st=p.scrollTop;let h='';
   if(tab==='mech')h=tabMech();else if(tab==='tree')h=tabTree();else if(tab==='armory')h=tabArmory();else if(tab==='shop')h=tabShop();else h=tabReboot();
   p.innerHTML=h;p.scrollTop=st;updatePanel();
+  for(const c of p.querySelectorAll('.hcv')){const hh=S.hp[+c.dataset.i];if(hh&&hh.w)drawGunArt(c,hh.w);}
 }
 function updatePanel(){
   for(const el of document.querySelectorAll('#panel [data-cost]')){const cur=el.dataset.cur==='c'?S.crystals:S.money;el.classList.toggle('dis',cur<+el.dataset.cost);}
 }
 function hpCard(i){
   const h=S.hp[i],w=h.w;
-  if(!w)return `<button class="unlock" data-act="draft" data-k="${i}">CHOOSE WEAPON FOR HARDPOINT ${i+1}<small>Pick 1 of 2 from the 12,000-weapon pool</small></button>`;
-  const {n,cost}=buyInfo(i);const ms=Math.pow(2,Math.floor(h.lvl/25));const rc=WRAR[w.rar][1];
-  return `<div class="card wcard"><button class="wico" data-act="winfo" data-k="${i}" style="border-color:${rc}">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></button><div class="wmid" data-act="winfo" data-k="${i}"><div class="wname" style="color:${rc}">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · HP${i+1}</div><div class="wbar"><i style="width:${(h.lvl%25)/25*100}%"></i></div><div class="wsub"><span>Lv. ${h.lvl}</span><span>DPS ${fmt(wDps(i)*D.rate)}/s</span><span class="ms">x${ms}</span></div></div>
+  if(!w)return `<button class="unlock" data-act="fdraft" data-k="${i}">CHOOSE A FRAME FOR HARDPOINT ${i+1}<small>Pick 1 of 2 gun frames</small></button>`;
+  const {n,cost}=buyInfo(i);const ms=Math.pow(2,Math.floor(h.lvl/25));const rc=WRAR[gunTier(w)][1];
+  return `<div class="card wcard"><button class="wico" data-act="fab" data-k="${i}" style="border-color:${rc}"><canvas class="hcv" data-i="${i}" width="104" height="104"></canvas></button><div class="wmid" data-act="fab" data-k="${i}"><div class="wname" style="color:${rc}">${gunName(w)}</div><div class="wtag">${gunMk(w)} · Power ×${gunPower(w).toFixed(2)} · HP${i+1} · tap to customize</div><div class="wbar"><i style="width:${(h.lvl%25)/25*100}%"></i></div><div class="wsub"><span>Lv. ${h.lvl}</span><span>DPS ${fmt(wDps(i)*D.rate)}/s</span><span class="ms">x${ms}</span></div></div>
   <button class="buy" data-act="buyw" data-k="${i}" data-cost="${cost}"><small>+${n} LV · +${n}% $</small><b>${fmt(cost)} <em>$</em></b></button></div>`;
 }
 function tabMech(){
   let h=`<div class="row between" style="margin-bottom:9px"><div class="h" style="margin:0">Total DPS <b class="mono">${fmt(totalDps())}</b></div><div class="seg">${[1,10,25,'MAX'].map(m=>`<button data-act="buymode" data-v="${m}" class="${S.buyMode==m?'on':''}">${m==='MAX'?'MAX':'x'+m}</button>`).join('')}</div></div>`;
-  h+=`<div class="row between" style="margin-bottom:9px;gap:8px"><button class="btn" data-act="codex" style="flex:1">📖 Codex ${S.found.length}/${fmt(POOL)}</button><button class="btn" data-act="stash" style="flex:1">🗄 Stash ${S.stash.length}</button></div>`;
-  if(S.caches)h+=`<div class="row" style="margin-bottom:9px;gap:8px"><button class="btn o" data-act="opencache" style="flex:1">▣ Open 1 (pick 1 of 2)</button><button class="btn o" data-act="openall" style="flex:1;background:#ffa62b;color:#1a1205">▣▣ Open all ×${S.caches}</button></div>`;
+  h+=`<button class="unlock" data-act="fab" style="margin-bottom:9px">🔧 FAB SHOP<small>Build your guns from ${fmt(BUILDS)} part combinations · ${S.parts.length} parts in bin</small></button>`;
+  if(S.caches)h+=`<div class="row" style="margin-bottom:9px;gap:8px"><button class="btn o" data-act="crate1" style="flex:1">▣ Open 1 crate</button><button class="btn o" data-act="crates" style="flex:1;background:#ffa62b;color:#1a1205">▣▣ Open all ×${S.caches}</button></div>`;
   let shownLock=false;
   for(let i=0;i<6;i++){
     if(S.hp[i])h+=hpCard(i);
@@ -1439,31 +1751,29 @@ document.addEventListener('click',ev=>{
   const nb=ev.target.closest('#nav button');
   if(nb){tab=nb.dataset.tab;for(const b of document.querySelectorAll('#nav button'))b.classList.toggle('on',b===nb);$('#panel').scrollTop=0;renderPanel();snd(600,.05,'square',.02);return;}
   if(ev.target.id==='modal'){if(modalKind!=='draft')closeModal();return;}
+  const sk=ev.target.closest('.sock');if(sk&&R.fabOpen){const sl=sk.dataset.sock;if(sl==='frame')frameSheet();else{const p=S.hp[fabI].w.p[sl];if(p)showPartSheet(p.u,sl);else{fabFilter=sl;fabRefresh();}}return;}
   const b=ev.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act,k=b.dataset.k;
   switch(a){
     case 'buymode':S.buyMode=b.dataset.v==='MAX'?'MAX':+b.dataset.v;renderPanel();break;
     case 'buyw':{const i=+k;const {n,cost}=buyInfo(i);if(S.money>=cost){S.money-=cost;S.hp[i].lvl+=n;recalc();snd(900,.06,'square',.03,1.4);renderPanel();}break;}
-    case 'unlock':{const i=+k;if(S.money>=HPT[i].unlock&&!S.hp[i]){S.money-=HPT[i].unlock;S.hp[i]={lvl:1,w:null};newDraft('unlock',i,0);}break;}
-    case 'draft':{const i=+k;if(S.hp[i]&&!S.hp[i].w)newDraft('unlock',i,0);break;}
-    case 'pick':pickDraft(+k);break;
-    case 'install':{const w=R.draft&&R.draft.picked;if(w){const i=+k;if(S.hp[i].w)toStash(S.hp[i].w);S.hp[i].w=w;S.caches=Math.max(0,S.caches-1);finishDraft(w,i);}break;}
-    case 'scrapcache':{if(R.draft){S.caches=Math.max(0,S.caches-1);S.crystals+=3;R.draft=null;R.paused=false;closeModal();renderPanel();toast('Cache scrapped +3 ◆','#3fe0ff');}break;}
-    case 'reroll':{if(R.draft&&!R.draft.picked&&S.crystals>=5){S.crystals-=5;const d=R.draft;newDraft(d.mode,d.slot,d.bonus);}break;}
-    case 'opencache':{if(S.caches>0)newDraft('cache',null,.2);break;}
-    case 'openall':openAll();break;
-    case 'stash':showStash();break;
-    case 'sitem':showStashItem(+k);break;
-    case 'automerge':{const n=autoMerge();toast(n?`Merged ${n} times`:'Need 3 weapons of the same rarity',n?'#5dff9b':null);if(n)snd(500,.3,'triangle',.05,2);showStash();break;}
-    case 'autoequip':{const n=autoEquip();toast(n?`Auto-equipped ${n} upgrade${n>1?'s':''}`:'Already running your best weapons','#5dff9b');if(modalKind==='stash')showStash();else closeModal();break;}
-    case 'scraplow':{const x=S.stash.filter(w=>w.rar<=1);let v=0;for(const w of x)v+=scrapVal(w);S.stash=S.stash.filter(w=>w.rar>1);if(x.length){earn(v/(D.scrap*(boostOn()?2:1)));toast(`Scrapped ${x.length} for $${fmt(v)}`,'#ffa62b');}showStash();break;}
-    case 'sinstall':{const i=+k,u=+b.dataset.u;const w=S.stash.find(x=>x.u===u);if(w&&S.hp[i]){S.stash=S.stash.filter(x=>x!==w);if(S.hp[i].w)toStash(S.hp[i].w);S.hp[i].w={id:w.id,rar:w.rar};recalc();renderPanel();toast(`${wName(w.id)} installed on HP${i+1}`,WRAR[w.rar][1]);showStash();}break;}
-    case 'smerge':{if(mergeInto(+k)){snd(500,.3,'triangle',.05,2);toast('Merged!','#5dff9b');}showStashItem(+k);break;}
-    case 'sscrap':{const w=S.stash.find(x=>x.u===+k);if(w){S.stash=S.stash.filter(x=>x!==w);const v=scrapVal(w);S.money+=v;S.stats.earned+=v;toast('Scrapped +$'+fmt(v),'#ffa62b');}showStash();break;}
-    case 'mergeup':{const i=+k;if(mergeUpHp(i)){snd(500,.3,'triangle',.05,2);toast('Merged up to '+WRAR[S.hp[i].w.rar][0],WRAR[S.hp[i].w.rar][1]);renderPanel();}showWInfo(i);break;}
-    case 'cachestash':{const w=R.draft&&R.draft.picked;if(w){toStash(w);S.caches=Math.max(0,S.caches-1);R.draft=null;R.paused=false;closeModal();renderPanel();toast('Sent to stash','#3fe0ff');}break;}
-    case 'winfo':showWInfo(+k);break;
-    case 'codex':showCodex();break;
+    case 'unlock':{const i=+k;if(S.money>=HPT[i].unlock&&!S.hp[i]){S.money-=HPT[i].unlock;S.hp[i]={lvl:1,w:null};frameDraft(i);}break;}
+    case 'fdraft':{const i=+k;if(S.hp[i]&&!S.hp[i].w)frameDraft(i);break;}
+    case 'pickframe':{const f=+k,i=R.draft&&R.draft.slot;if(i!=null&&S.hp[i]){S.hp[i].w=newGun(f);if(!S.frames.includes(f))S.frames.push(f);R.draft=null;R.paused=false;closeModal();recalc();renderPanel();toast(BASES[f].name+' frame installed — fit parts in the Fab Shop','#3fe0ff');openFab(i);}break;}
+    case 'fab':closeModal();openFab(k!=null?+k:null);break;
+    case 'fabclose':closeFab();break;
+    case 'fabhp':fabI=+k;fabPrev=null;fabRefresh();break;
+    case 'fabfilter':fabFilter=k;fabRefresh();break;
+    case 'fabauto':{const n=autoBuild(fabI);toast(n?`Auto-build changed ${n} part${n>1?'s':''}`:'Already the best build from your bin','#5dff9b');fabRefresh();break;}
+    case 'fabmerge':{const n=autoMergeParts();toast(n?`Merged ${n} times`:'Need 3 identical parts (same part & rarity)',n?'#5dff9b':null);if(n)snd(500,.3,'triangle',.05,2);fabRefresh();break;}
+    case 'fabscrap':{const x=S.parts.filter(p=>p.r===0);let v=0;for(const p of x)v+=partVal(p);S.parts=S.parts.filter(p=>p.r>0);if(x.length){S.money+=v;S.stats.earned+=v;toast(`Scrapped ${x.length} commons for $${fmt(v)}`,'#ffa62b');}fabRefresh();break;}
+    case 'crates':openCrates(S.caches);if(R.fabOpen)fabRefresh();break;
+    case 'crate1':openCrates(1);break;
+    case 'pinstall':{installPart(fabI,+k);closeModal();snd(500,.12,'square',.04,1.6);fabRefresh();break;}
+    case 'premove':{removePart(fabI,k);closeModal();fabRefresh();break;}
+    case 'pmerge':{if(mergePart(+k)){snd(500,.3,'triangle',.05,2);toast('Merged!','#5dff9b');}showPartSheet(+k);fabRefresh();break;}
+    case 'pscrap':{const pp=S.parts.find(x=>x.u===+k);if(pp){S.parts=S.parts.filter(x=>x!==pp);const v=partVal(pp);S.money+=v;S.stats.earned+=v;toast('Scrapped +$'+fmt(v),'#ffa62b');}closeModal();fabRefresh();break;}
+    case 'setframe':{const h=S.hp[fabI];h.w.f=+k;recalc();closeModal();fabRefresh();toast(BASES[+k].name+' frame fitted','#3fe0ff');break;}
     case 'tree':{const n=TR[k],c=treeCost(n);if(S.money>=c&&lvl(k)<n.max&&(!n.p||lvl(n.p))){S.money-=c;S.tree[k]=lvl(k)+1;recalc();snd(700,.08,'triangle',.04,1.5);renderPanel();}break;}
     case 'equip':{const id=+b.dataset.id;const i=S.equipped.indexOf(null);if(i<0){toast('All slots full — tap an equipped module to remove it');break;}S.equipped[i]=id;recalc();renderPanel();snd(800,.06,'triangle',.03);break;}
     case 'unequip':{const id=+b.dataset.id;const i=S.equipped.indexOf(id);if(i>=0)S.equipped[i]=null;recalc();renderPanel();break;}
@@ -1473,7 +1783,7 @@ document.addEventListener('click',ev=>{
       if(k==='orbital'||k==='repair'){S.abilities[k]=true;toast((k==='orbital'?'Orbital Strike':'Field Repair')+' unlocked','#3fe0ff');}
       else if(k==='slot'){S.slots++;S.equipped.push(null);}
       else if(k==='crate')dropModule(1);
-      else if(k==='cache'){S.caches++;newDraft('cache',null,.2);}
+      else if(k==='cache'){S.caches++;openCrates(1);}
       else if(k==='warp'){const v=earn(Math.max(S.avgIncome,rewScale(S.wave)*3)*3600/((D.scrap)*(boostOn()?2:1)));toast('Time Warp: +$'+fmt(v),'#ffa62b');}
       snd(1000,.15,'triangle',.04,1.5);renderPanel();break;}
     case 'reboot':{const g=coresGain();if(!g)break;openModal(`<h2>Reboot?</h2><p class="note">You'll install <b style="color:#3fe0ff">+${g} Cores</b> (total ${S.cores+g}, +${(S.cores+g)*15}% damage & scrap) and restart at Wave 1. Weapons, money and the tree reset.</p><div class="row" style="gap:10px;margin-top:12px"><button class="btn o" data-act="reboot2">REBOOT</button><button class="btn" data-act="close">Cancel</button></div>`);break;}
@@ -1500,122 +1810,10 @@ function rollWRar(bonus){
   const cap=rarCap(),luck=.25*S.prestiges+bonus;const w=[60,28,10,4,1.5,.5].slice(0,cap+1).map((x,i)=>x*Math.pow(1+luck,i));
   let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}return 0;
 }
-function rollWeapon(bonus,avoidBase,starter){
-  let id=0;for(let t=0;t<40;t++){id=Math.floor(Math.random()*POOL);const bb=Math.floor(id%1000/100);if(avoidBase!=null&&bb===avoidBase)continue;if(starter&&(bb===3||bb===8||bb===2))continue;if(!S.found.includes(id)||t>5)break;}
-  return{id,rar:rollWRar(bonus)};
-}
-function newDraft(mode,slot,bonus){const st=mode==='unlock'&&slot===0&&!S.hp.some((h,i)=>i>0&&h);const a=rollWeapon(bonus,null,st);const b=rollWeapon(bonus,Math.floor(a.id%1000/100),st);R.draft={mode,slot,bonus,opts:[a,b]};R.paused=true;showDraft();}
-function statLines(w,i){
-  const save=S.hp[i];S.hp[i]={lvl:save?save.lvl:1,w};const st=wStats(i);S.hp[i]=save;
-  const b=wb(w.id),L=[];
-  L.push(`<b>DPS ${fmt(st.dps*D.dmg*D.rate)}</b> at HP${i+1} Lv.${save?save.lvl:1}`);
-  L.push(`${st.kind==='beam'||st.kind==='cone'?'Ticks':'Fire rate'} ${st.rate.toFixed(2)}/s`+(st.pellets>1?` · ${st.pellets} ${st.kind==='beam'?'beams':st.kind==='rail'?'rails':st.kind==='chain'?'chains':st.kind==='cone'?'width':'projectiles'}`:''));
-  const ex=[];if(st.pierce)ex.push('Pierce '+st.pierce);if(st.chains)ex.push(st.chains+' jumps');if(st.aoe)ex.push('Blast '+Math.round(st.aoe));if(st.range)ex.push('Range '+Math.round(st.range));if(st.homing)ex.push('Homing');if(st.crit)ex.push('+'+Math.round(st.crit*100)+'% crit');if(st.critMult)ex.push('+'+Math.round(st.critMult*100)+'% crit dmg');
-  if(ex.length)L.push(ex.join(' · '));
-  return `<div class="wl">${b.desc}</div><div class="wl" style="color:#ffd27a">${wp(w.id)[0]}: ${wp(w.id)[1]}</div><div class="wl" style="color:${we(w.id).col}">${we(w.id).desc}</div>${wsx(w.id)[0]?`<div class="wl" style="color:#9fe6ff">${wsx(w.id)[0]}: ${wsx(w.id)[1]}</div>`:''}<div class="wl stats">${L.join('<br>')}</div>`;
-}
-function wCardHtml(w,i,k){const rc=WRAR[w.rar][1],isNew=!S.found.includes(w.id);
-  return `<div class="dcard" style="border-color:${rc};box-shadow:0 0 16px ${rc}33"><div class="row between"><span class="wtag">${wNo(w.id)}</span>${isNew?'<span class="newb">NEW</span>':'<span class="wtag">owned</span>'}</div>
-  <div class="dico">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div>
-  <div class="wname" style="color:${rc};white-space:normal">${wName(w.id)}</div><div class="wtag" style="color:${rc}">${WRAR[w.rar][0]}</div>${statLines(w,i)}
-  <button class="unlock" style="margin:8px 0 0;padding:10px;font-size:15px" data-act="pick" data-k="${k}">TAKE</button></div>`}
-function showDraft(){
-  const d=R.draft;if(!d)return;
-  const slot=d.mode==='cache'?(d.slot??S.hp.findIndex(h=>h&&h.w)):d.slot;const i=Math.max(0,slot);
-  const title=d.mode==='cache'?'Weapon Cache':'Hardpoint '+(d.slot+1)+' online';
-  openModal(`<h2>${title}</h2><div class="note" style="margin-bottom:8px">Choose 1 of 2 · Codex ${S.found.length}/${fmt(POOL)}</div><div class="dgrid">${d.opts.map((w,k)=>wCardHtml(w,i,k)).join('')}</div>
-  <div class="row" style="gap:8px;margin-top:10px"><button class="btn" data-act="reroll" data-cost="5" data-cur="c">⟳ Reroll both · 5 ◆</button>${d.mode==='cache'?'<button class="btn o" data-act="scrapcache">Scrap for 3 ◆</button>':''}</div>`,'draft');
-}
-function pickDraft(k){
-  const d=R.draft;if(!d)return;const w=d.opts[k];
-  if(!S.found.includes(w.id))S.found.push(w.id);
-  if(d.mode==='cache'){R.draft.picked=w;showSlotPick();return;}
-  S.hp[d.slot].w=w;finishDraft(w,d.slot);
-}
-function showSlotPick(){
-  const w=R.draft.picked;let h=`<h2>Install ${wName(w.id)}</h2><div class="note" style="margin-bottom:8px">Pick a hardpoint. The new weapon keeps that hardpoint's level.</div>`;
-  for(let i=0;i<6;i++){const hp=S.hp[i];if(!hp)continue;const save=hp.w;hp.w=w;const nd=wStats(i).dps;hp.w=save;const od=save?wStats(i).dps:0;const up=nd>=od;
-    h+=`<div class="card wcard"><div class="wmid"><div class="wtag">HP${i+1} · Lv.${hp.lvl}</div><div class="wname" style="font-size:14px;color:${save?WRAR[save.rar][1]:'#7f93a6'}">${save?wName(save.id):'Empty'}</div><div class="wsub"><span>${fmt(od*D.dmg*D.rate)} → <b style="color:${up?'#5dff9b':'#ff4d5e'}">${fmt(nd*D.dmg*D.rate)}</b> DPS</span></div></div><button class="buy" data-act="install" data-k="${i}"><small>${up?'▲ UPGRADE':'▼ SWAP'}</small><b>INSTALL</b></button></div>`;}
-  h+=`<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-act="cachestash">🗄 Send to stash</button><button class="btn o" data-act="scrapcache">Scrap for 3 ◆</button></div>`;
-  openModal(h,'draft');
-}
-function finishDraft(w,i){S.stats.drafts=(S.stats.drafts||0)+1;R.draft=null;R.paused=false;closeModal();recalc();renderPanel();
-  toast(`${wName(w.id)} installed on HP${i+1}`,WRAR[w.rar][1]);snd(400,.3,'sawtooth',.04,2);}
 const mergeCap=()=>Math.min(5,rarCap()+1);
 const STASH_MAX=300;
-function scrapVal(w){return rewScale(S.wave)*3*Math.pow(w.rar+1,2)}
-function toStash(w){S.stash.push({u:S.nextId++,id:w.id,rar:w.rar});if(!S.found.includes(w.id))S.found.push(w.id);
-  if(S.stash.length>STASH_MAX){S.stash.sort((a,b)=>a.rar-b.rar||wScore(a)-wScore(b));const x=S.stash.shift();earn(scrapVal(x));}}
-function openAll(){
-  const n=S.caches;if(!n)return;const before=S.found.length;const cnt=[0,0,0,0,0,0];
-  for(let k=0;k<n;k++){const a=rollWeapon(.2),b=rollWeapon(.2,Math.floor(a.id%1000/100));const w=(b.rar>a.rar||(b.rar===a.rar&&wScore(b)>wScore(a)))?b:a;toStash(w);cnt[w.rar]++;}
-  S.caches=0;S.stats.drafts=(S.stats.drafts||0)+n;
-  const m=autoMerge();
-  openModal(`<button class="x" data-act="close">✕</button><h2>Opened ${n} caches</h2><div class="note" style="margin-bottom:8px">Each cache kept the better of its 2 rolls. +${S.found.length-before} new codex entries.</div>
-  ${cnt.map((c,r)=>c?`<div class="stat"><span style="color:${WRAR[r][1]}">${WRAR[r][0]}</span><b>×${c}</b></div>`:'').join('')}
-  <div class="note" style="margin:8px 0">${m?`Auto-merged ${m} times. `:''}Stash: ${S.stash.length} weapons.</div>
-  <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn o" data-act="autoequip">⚡ Auto-equip best</button><button class="btn" data-act="stash">🗄 Open stash</button></div>`,'bulk');
-  renderPanel();snd(600,.4,'triangle',.05,2);
-}
 // merge 3 of same rarity -> 1 of next rarity (keeps the strongest design)
-function autoMerge(){
-  let n=0;const cap=mergeCap();
-  for(let r=0;r<cap;r++){
-    let g=S.stash.filter(w=>w.rar===r).sort((a,b)=>wScore(b)-wScore(a));
-    while(g.length>=3){const keep=g[0],used=[g[0],g[g.length-1],g[g.length-2]];g=g.filter(w=>!used.includes(w));
-      S.stash=S.stash.filter(w=>!used.includes(w));S.stash.push({u:S.nextId++,id:keep.id,rar:r+1});n++;}
-  }
-  S.stats.fused+=n;return n;
-}
-function mergeInto(u){ // merge chosen stash weapon with 2 weakest of same rarity
-  const w=S.stash.find(x=>x.u===u);if(!w||w.rar>=mergeCap())return false;
-  const f=S.stash.filter(x=>x!==w&&x.rar===w.rar).sort((a,b)=>wScore(a)-wScore(b)).slice(0,2);if(f.length<2)return false;
-  S.stash=S.stash.filter(x=>!f.includes(x));w.rar++;S.stats.fused++;return true;
-}
-function mergeUpHp(i){const h=S.hp[i];if(!h||!h.w||h.w.rar>=mergeCap())return false;
-  const f=S.stash.filter(x=>x.rar===h.w.rar).sort((a,b)=>wScore(a)-wScore(b)).slice(0,2);if(f.length<2)return false;
-  S.stash=S.stash.filter(x=>!f.includes(x));h.w={id:h.w.id,rar:h.w.rar+1};S.stats.fused++;recalc();return true;}
-function autoEquip(){
-  const slots=[];for(let i=0;i<6;i++)if(S.hp[i])slots.push(i);
-  const pool=S.stash.slice();for(const i of slots)if(S.hp[i].w)pool.push({u:S.nextId++,id:S.hp[i].w.id,rar:S.hp[i].w.rar});
-  pool.sort((a,b)=>wScore(b)-wScore(a));let changed=0;
-  // highest hardpoint tier gets the best weapon
-  const order=slots.slice().sort((a,b)=>b-a);
-  order.forEach((i,k)=>{const w=pool[k];if(!w)return;const old=S.hp[i].w;if(!old||old.id!==w.id||old.rar!==w.rar)changed++;S.hp[i].w={id:w.id,rar:w.rar};});
-  S.stash=pool.slice(order.length);recalc();renderPanel();return changed;
-}
-function stashRow(w){const rc=WRAR[w.rar][1];return `<button class="srow" data-act="sitem" data-k="${w.u}" style="border-left-color:${rc}"><span class="sn" style="color:${rc}">${wName(w.id)}</span><span class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · power ${fmt(wScore(w)*D.dmg*D.rate)}</span></button>`}
-function showStash(){
-  const list=S.stash.slice().sort((a,b)=>b.rar-a.rar||wScore(b)-wScore(a));
-  const byR=[0,0,0,0,0,0];for(const w of S.stash)byR[w.rar]++;
-  let h=`<button class="x" data-act="close">✕</button><h2>Weapon Stash <span class="wtag">${S.stash.length}/${STASH_MAX}</span></h2>
-  <div class="note" style="margin-bottom:8px">Merge 3 of the same rarity into 1 of the next (keeps the strongest design). Merging can go one rarity above your drop cap: up to <b style="color:${WRAR[mergeCap()][1]}">${WRAR[mergeCap()][0]}</b>.</div>
-  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">${S.caches?`<button class="btn o" data-act="openall">▣ Open all ${S.caches}</button>`:''}<button class="btn" data-act="automerge">⚙ Auto-merge</button><button class="btn" data-act="autoequip">⚡ Auto-equip best</button><button class="btn o" data-act="scraplow">♻ Scrap Common+Uncommon</button></div>
-  <div class="note" style="margin-bottom:6px">${byR.map((c,r)=>c?`<span style="color:${WRAR[r][1]}">${WRAR[r][0]} ${c}</span>`:'').filter(Boolean).join(' · ')||'Empty — open Weapon Caches to fill it.'}</div>
-  <div class="slist">${list.map(stashRow).join('')}</div>`;
-  openModal(h,'stash');
-}
-function showStashItem(u){
-  const w=S.stash.find(x=>x.u===u);if(!w)return showStash();
-  const same=S.stash.filter(x=>x!==w&&x.rar===w.rar).length;const canM=w.rar<mergeCap()&&same>=2;
-  let h=`<button class="x" data-act="stash">←</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]}</div></div></div>${statLines(w,S.hp.findIndex(x=>x)) }
-  <div class="h" style="margin-top:10px">Install on</div>`;
-  for(let i=0;i<6;i++){const hp=S.hp[i];if(!hp)continue;const od=hp.w?wStatsW(hp.w,i,hp.lvl).dps:0,nd=wStatsW(w,i,hp.lvl).dps;
-    h+=`<button class="srow" data-act="sinstall" data-k="${i}" data-u="${u}"><span class="sn">HP${i+1} · ${hp.w?wName(hp.w.id):'Empty'}</span><span class="wtag">${fmt(od*D.dmg*D.rate)} → <b style="color:${nd>=od?'#5dff9b':'#ff4d5e'}">${fmt(nd*D.dmg*D.rate)}</b> DPS</span></button>`;}
-  h+=`<div class="row" style="gap:8px;margin-top:10px"><button class="btn ${canM?'':'dis'}" data-act="smerge" data-k="${u}">⚙ Merge → ${w.rar<5?WRAR[w.rar+1][0]:'MAX'} (uses 2 ${WRAR[w.rar][0]})</button><button class="btn o" data-act="sscrap" data-k="${u}">♻ Scrap $${fmt(scrapVal(w))}</button></div>`;
-  openModal(h,'stash');
-}
-function gainCache(src){S.caches++;toast('▣ Weapon Cache from '+src+' — open it in the Mech tab','#ffa62b');}
-function showWInfo(i){const h=S.hp[i];if(!h||!h.w)return;const w=h.w;
-  openModal(`<button class="x" data-act="close">✕</button><div class="row" style="gap:10px;margin-bottom:6px"><div class="dico" style="margin:0">${icOf(w.id)}<i class="edot" style="background:${we(w.id).col}"></i></div><div><div class="wname" style="color:${WRAR[w.rar][1]};white-space:normal">${wName(w.id)}</div><div class="wtag">${wNo(w.id)} · ${WRAR[w.rar][0]} · Hardpoint ${i+1}</div></div></div>${statLines(w,i)}`,'info');
-  const can=h.w.rar<mergeCap()&&S.stash.filter(x=>x.rar===h.w.rar).length>=2;
-  $('#mbox').insertAdjacentHTML('beforeend',`<div class="row" style="gap:8px;margin-top:10px"><button class="btn ${can?'':'dis'}" data-act="mergeup" data-k="${i}">⚙ Merge up → ${h.w.rar<5?WRAR[h.w.rar+1][0]:'MAX'} (uses 2 ${WRAR[h.w.rar][0]} from stash)</button></div>`);}
-function showCodex(){
-  let h=`<button class="x" data-act="close">✕</button><h2>Weapon Codex</h2><div class="note" style="margin-bottom:10px">${S.found.length} of 12,000 weapons discovered. A weapon counts once you take it from a draft. 10 bases × 20 prefixes × 5 elements × 12 suffixes.</div>`;
-  BASES.forEach((b,bi)=>{const n=S.found.filter(id=>Math.floor(id%1000/100)===bi).length;h+=`<div class="stat"><span>${b.name}</span><b>${n}/1,200</b></div><div class="pbar" style="margin:0 0 6px"><i style="width:${n/12}%;background:var(--cyan)"></i></div>`;});
-  h+=`<div class="h" style="margin-top:10px">Prefixes</div><div class="note">${PREFIX.map(p=>`<b style="color:#ffd27a">${p[0]}</b> ${p[1]}`).join(' · ')}</div><div class="h" style="margin-top:10px">Suffixes</div><div class="note">${SUFFIX.slice(1).map(x=>`<b style="color:#9fe6ff">${x[0]}</b> ${x[1]}`).join(' · ')}</div><div class="h" style="margin-top:10px">Elements</div><div class="note">${ELEM.map(e=>`<span style="color:${e.col}">${e.desc}</span>`).join('<br>')}</div>`;
-  openModal(h,'codex');
-}
+function gainCache(src){S.caches++;toast('▣ Parts Crate from '+src+' — open it in the Mech tab or Fab Shop','#ffa62b');}
 function useAbility(k){
   if(!S.abilities[k]){toast('Unlock in the Shop with ◆');return;}
   if(R.cd[k]>0)return;
@@ -1629,7 +1827,7 @@ function useAbility(k){
 function resetRun(){R.en=[];R.sq=[];R.hives=[];S.world=null;R.pr=[];R.ep=[];R.strikes=[];R.focus=null;R.parts=[];R.nums=[];}
 function doReboot(){
   const g=coresGain();if(!g)return;
-  S.cores+=g;S.prestiges++;S.money=50+150*S.prestiges;S.hp=[{lvl:1,w:S.hp[0]&&S.hp[0].w},null,null,null,null,null];S.tree={};S.wave=1;S.maxWaveRun=1;S.farm=false;S.hull=null;
+  S.cores+=g;S.prestiges++;S.money=50+150*S.prestiges;for(let i=1;i<6;i++){const h=S.hp[i];if(h&&h.w&&h.w.p)for(const sl of SLOTS)if(h.w.p[sl])S.parts.push(h.w.p[sl]);}S.hp=[{lvl:1,w:S.hp[0]&&S.hp[0].w},null,null,null,null,null];S.tree={};S.wave=1;S.maxWaveRun=1;S.farm=false;S.hull=null;
   resetRun();recalc();newPlanet(1,1);banner('REBOOT COMPLETE','#3fe0ff');toast('+'+g+' Reactor Cores installed','#3fe0ff');renderPanel();save();
 }
 // tap battlefield
@@ -1680,7 +1878,7 @@ load();resize();recalc();fillMissions();
 if(S.world)loadWorld(S.world);else{const idx=Math.max(1,Math.floor((S.wave-1)/5)+1);newPlanet(Math.floor((idx-1)/5)+1,(idx-1)%5+1);}
 renderPanel();hud();
 setTimeout(()=>{if(W&&recTier()>(W.diff||0))toast(`Too easy? Tap “G${W.gal}·P${W.pl}” to play ${DIFF[recTier()].n} for ×${DIFF[recTier()].rew} rewards`,DIFF[recTier()].col);},2500);
-if(S.hp[0]&&!S.hp[0].w){S.hp[0].w={id:0,rar:0};recalc();renderPanel();}
+if(S.hp[0]&&!S.hp[0].w){S.hp[0].w=newGun(0);recalc();renderPanel();}
 if(S.last)offlineGain(Date.now()-S.last);
 else toast('Tap enemies or Hives to focus fire. Buy upgrades below.','#3fe0ff');
 requestAnimationFrame(loop);

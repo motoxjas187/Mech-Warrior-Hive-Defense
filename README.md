@@ -1,6 +1,6 @@
 # Mech Siege: Hive War
 
-An idle dig-and-fight mech game for Android: your mech roams procedurally generated planets (5 sizes per galaxy), digging through rock and ore while swarms path through the tunnels toward it; a 12,000-weapon draft pool (10 bases × 20 prefixes × 5 elements × 12 suffixes, choose 1 of 2 on every new hardpoint or Weapon Cache), six hardpoints, squad-based alien waves, Hives, Queen bosses, an upgrade tree, fusable modules and Core Reboot prestige.
+An idle dig-and-fight mech game for Android: your mech roams procedurally generated planets (5 sizes per galaxy), digging through rock and ore while swarms path through the tunnels toward it; a Fab Shop where you build guns from parts (10 frames + barrel, magazine, stock, optic, muzzle, element core and chip; 5M+ builds) with drag-and-drop, six hardpoints, squad-based alien waves, Hives, Queen bosses, an upgrade tree, fusable modules and Core Reboot prestige.
 
 ## Get the APK
 Every push to `main` builds a new APK automatically.
